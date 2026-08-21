@@ -1,0 +1,28 @@
+RevRecover/
+│
+├── backend/
+├── frontend/
+├── worker/
+├── docs/
+├── scripts/
+├── tests/
+├── .github/
+│   └── workflows/
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── README.md
+└── LICENSE
+
+
+
+backend/
+├── app/
+│   ├── api/
+│   ├── core/
+│   ├── models/
+│   ├── schemas/
+│   ├── services/
+│   ├── repositories/
+│   ├── workers/
+│   └── main.py
