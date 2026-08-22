@@ -8,6 +8,8 @@ from app.models.recovery import (
     RecoveryAttempt
 )
 from app.models.system import WebhookEvent, IdempotencyKey
+from app.models.user import User
+from app.models.organisation_member import OrganisationMember
 
 __all__ = [
     "Organisation",
@@ -19,5 +21,7 @@ __all__ = [
     "RecoveryAction",
     "RecoveryAttempt",
     "WebhookEvent",
-    "IdempotencyKey"
+    "IdempotencyKey",
+    "User",
+    "OrganisationMember"
 ]

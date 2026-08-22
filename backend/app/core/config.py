@@ -29,9 +29,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     DATABASE_URL: str
-
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10
+    
+    JWT_SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    JWT_ALGORITHM: str = "HS256"
 
     model_config = SettingsConfigDict(
         env_file=".env",

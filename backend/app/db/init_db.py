@@ -24,7 +24,9 @@ from app.models import (
     RecoveryAction,
     RecoveryAttempt,
     WebhookEvent,
-    IdempotencyKey
+    IdempotencyKey,
+    User,
+    OrganisationMember
 )
 import logging
 

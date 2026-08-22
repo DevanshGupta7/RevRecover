@@ -17,6 +17,7 @@ import logging
 from app.core.logging_config import setup_logging
 from app.core.exceptions import RevRecoverException
 from app.core.handlers import revrecover_exception_handler
+from app.api.auth.router import router as auth_router
 
 setup_logging()
 
@@ -27,6 +28,10 @@ app = FastAPI(title="RevRecover")
 app.add_exception_handler(
     RevRecoverException,
     revrecover_exception_handler
+)
+
+app.include_router(
+    auth_router
 )
 
 @app.get("/health")

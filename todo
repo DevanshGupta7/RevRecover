@@ -26,3 +26,39 @@ backend/
 │   ├── repositories/
 │   ├── workers/
 │   └── main.py
+
+
+
+app/
+│
+├── api/
+│   └── auth/
+│       ├── __init__.py
+│       ├── dependencies.py
+│       ├── repository.py
+│       ├── router.py
+│       ├── service.py
+│       └── schemas/
+│           ├── __init__.py
+│           └── auth.py
+│
+├── core/
+│   └── security/
+│       ├── __init__.py
+│       ├── jwt.py
+│       └── password.py
+│
+├── db/
+│   ├── base.py
+│   ├── database.py
+│   └── init_db.py
+│
+└── models/
+    ├── __init__.py
+    ├── customer.py
+    ├── organisation.py
+    ├── organisation_member.py     ← NEW
+    ├── payment.py
+    ├── recovery.py
+    ├── system.py
+    └── user.py                    ← NEW
