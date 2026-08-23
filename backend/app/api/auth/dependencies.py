@@ -14,6 +14,7 @@ from app.core.exceptions import (
 )
 from app.core.security.jwt import decode_token
 from app.db.database import get_db
+from app.models.organisation_member import OrganisationRole
 
 oauth2_scheme = HTTPBearer()
 
@@ -90,3 +91,38 @@ def get_current_user(
         )
 
     return user, membership
+
+def require_roles(*allowed_roles: OrganisationRole):
+    """
+    Create a dependency that allows access only to users
+    whose organisation membership has one of the specified roles.
+
+    Args:
+        *allowed_roles:
+            Roles that are permitted to access the endpoint.
+
+    Returns:
+        A FastAPI dependency function that validates the
+        authenticated user's role.
+
+    Raises:
+        AuthorizationException:
+            If the authenticated user's role is not allowed.
+    """
+
+    def role_dependency(
+        current_user: Annotated[
+            tuple,
+            Depends(get_current_user)
+        ]
+    ):
+        user, membership = current_user
+
+        if membership.role not in allowed_roles:
+            raise AuthorizationException(
+                message="You do not have permission to access this resource."
+            )
+
+        return current_user
+
+    return role_dependency
