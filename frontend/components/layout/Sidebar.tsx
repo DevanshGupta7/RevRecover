@@ -39,7 +39,7 @@ export function Sidebar({
         mobile
           ? "w-full"
           : cn(
-              "hidden shrink-0 transition-[width] duration-200 md:flex",
+              "hidden shrink-0 transition-[width] duration-200 xl:flex",
               collapsed ? "w-[72px]" : "w-64"
             )
       )}
@@ -147,7 +147,7 @@ export function Sidebar({
 
       {/* Collapse button */}
       {!mobile && (
-        <div className="hidden shrink-0 border-t border-zinc-800 p-3 md:block">
+        <div className="hidden shrink-0 border-t border-zinc-800 p-3 xl:block">
           <Button
             type="button"
             variant="ghost"

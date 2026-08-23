@@ -73,7 +73,7 @@ export function Navbar({
           variant="ghost"
           size="icon"
           onClick={onMobileMenuOpen}
-          className="text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 md:hidden"
+          className="text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 xl:hidden"
           aria-label="Open navigation menu"
         >
           <Menu className="h-5 w-5" />
@@ -85,7 +85,7 @@ export function Navbar({
           variant="ghost"
           size="icon"
           onClick={onSidebarToggle}
-          className="hidden text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 md:flex"
+          className="hidden text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 xl:flex"
           aria-label="Toggle sidebar"
           title="Toggle sidebar"
         >
