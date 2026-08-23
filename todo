@@ -62,3 +62,130 @@ app/
     ├── recovery.py
     ├── system.py
     └── user.py                    ← NEW
+
+
+
+
+
+
+
+frontend/
+│
+├── app/
+│   │
+│   ├── login/
+│   │   └── page.tsx
+│   │
+│   ├── register/
+│   │   └── page.tsx
+│   │
+│   ├── dashboard/
+│   │   └── page.tsx
+│   │
+│   ├── payments/
+│   │   ├── page.tsx
+│   │   └── [id]/
+│   │       └── page.tsx
+│   │
+│   ├── recovery/
+│   │   ├── page.tsx
+│   │   └── [id]/
+│   │       └── page.tsx
+│   │
+│   ├── customers/
+│   │   ├── page.tsx
+│   │   └── [id]/
+│   │       └── page.tsx
+│   │
+│   ├── strategies/
+│   │   └── page.tsx
+│   │
+│   ├── analytics/
+│   │   └── page.tsx
+│   │
+│   ├── audit/
+│   │   └── page.tsx
+│   │
+│   ├── settings/
+│   │   └── page.tsx
+│   │
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── globals.css
+│
+├── components/
+│   │
+│   ├── layout/
+│   │   ├── Sidebar.tsx
+│   │   ├── Navbar.tsx
+│   │   └── DashboardShell.tsx
+│   │
+│   ├── dashboard/
+│   │   ├── MetricCard.tsx
+│   │   ├── RevenueRecoveryChart.tsx
+│   │   ├── RecoveryFunnel.tsx
+│   │   ├── FailureReasons.tsx
+│   │   └── RecoveryInsights.tsx
+│   │
+│   ├── payments/
+│   │   ├── PaymentTable.tsx
+│   │   ├── PaymentStatus.tsx
+│   │   ├── FailureReasonBadge.tsx
+│   │   └── RecoveryEligibility.tsx
+│   │
+│   ├── recovery/
+│   │   ├── RecoveryTable.tsx
+│   │   ├── RecoveryStatus.tsx
+│   │   ├── RecoveryDecision.tsx
+│   │   └── RecoveryTimeline.tsx
+│   │
+│   ├── customers/
+│   │   ├── CustomerTable.tsx
+│   │   ├── CustomerProfile.tsx
+│   │   └── CustomerInsights.tsx
+│   │
+│   ├── strategies/
+│   │   ├── StrategyCard.tsx
+│   │   └── StrategyDetails.tsx
+│   │
+│   ├── analytics/
+│   │   └── ...
+│   │
+│   ├── charts/
+│   │   ├── RevenueChart.tsx
+│   │   ├── RecoveryChart.tsx
+│   │   └── FailureChart.tsx
+│   │
+│   └── ui/
+│       └── ...
+│
+├── services/
+│   ├── auth.service.ts
+│   ├── dashboard.service.ts
+│   ├── payment.service.ts
+│   ├── recovery.service.ts
+│   ├── customer.service.ts
+│   ├── strategy.service.ts
+│   └── analytics.service.ts
+│
+├── hooks/
+│   ├── useDashboard.ts
+│   ├── usePayments.ts
+│   ├── useRecovery.ts
+│   └── useCustomers.ts
+│
+├── types/
+│   ├── auth.ts
+│   ├── dashboard.ts
+│   ├── payment.ts
+│   ├── recovery.ts
+│   ├── customer.ts
+│   └── strategy.ts
+│
+└── lib/
+    ├── api.ts
+    ├── utils.ts
+    └── constants.ts
+
+
+
