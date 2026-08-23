@@ -1,51 +1,66 @@
-import { AlertTriangle, CreditCard, Landmark, ServerCrash, Wallet } from "lucide-react";
-import { FailureReason } from "@/types/payment";
+import {
+  AlertTriangle,
+  Ban,
+  CircleDollarSign,
+  CreditCard,
+  ServerCrash,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import type { FailureReason } from "@/types/payment";
 
 interface FailureReasonBadgeProps {
   reason: FailureReason;
 }
 
-const reasonConfig: Record<
+const FAILURE_REASON_CONFIG: Record<
   FailureReason,
   {
+    label: string;
     icon: typeof AlertTriangle;
-    className: string;
   }
 > = {
-  "Insufficient Funds": {
-    icon: Wallet,
-    className: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  insufficient_funds: {
+    label: "Insufficient Funds",
+    icon: CircleDollarSign,
   },
-  "Expired Card": {
+
+  expired_card: {
+    label: "Expired Card",
     icon: CreditCard,
-    className: "text-orange-400 bg-orange-400/10 border-orange-400/20",
   },
-  "Bank Decline": {
-    icon: Landmark,
-    className: "text-red-400 bg-red-400/10 border-red-400/20",
+
+  bank_decline: {
+    label: "Bank Decline",
+    icon: Ban,
   },
-  "Technical Error": {
+
+  technical_error: {
+    label: "Technical Error",
     icon: ServerCrash,
-    className: "text-blue-400 bg-blue-400/10 border-blue-400/20",
   },
-  Other: {
+
+  other: {
+    label: "Other",
     icon: AlertTriangle,
-    className: "text-zinc-400 bg-zinc-400/10 border-zinc-400/20",
   },
 };
 
 export function FailureReasonBadge({
   reason,
 }: FailureReasonBadgeProps) {
-  const config = reasonConfig[reason];
+  const config = FAILURE_REASON_CONFIG[reason];
+
   const Icon = config.icon;
 
   return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium ${config.className}`}
+    <Badge
+      variant="outline"
+      className="gap-1.5 border-zinc-800 bg-zinc-900 text-zinc-400"
     >
-      <Icon className="h-3.5 w-3.5" />
-      {reason}
-    </span>
+      <Icon className="h-3 w-3" />
+
+      {config.label}
+    </Badge>
   );
 }

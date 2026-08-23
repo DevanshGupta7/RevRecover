@@ -1,31 +1,49 @@
-import { Check, HelpCircle, Minus } from "lucide-react";
-import { RecoveryEligibility as RecoveryEligibilityType } from "@/types/payment";
+import {
+  CircleCheck,
+  CircleX,
+  HelpCircle,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import type { RecoveryEligibility as Eligibility } from "@/types/payment";
 
 interface RecoveryEligibilityProps {
-  eligibility: RecoveryEligibilityType;
+  eligibility: Eligibility;
 }
 
-const eligibilityConfig = {
+const CONFIG = {
   high: {
-    label: "Yes",
-    icon: Check,
-    className: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    label: "High",
+    icon: CircleCheck,
+    className:
+      "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
   },
+
   medium: {
-    label: "Maybe",
+    label: "Medium",
     icon: HelpCircle,
-    className: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+    className:
+      "border-amber-500/20 bg-amber-500/10 text-amber-400",
   },
+
   low: {
-    label: "No",
-    icon: Minus,
-    className: "text-zinc-400 bg-zinc-400/10 border-zinc-400/20",
+    label: "Low",
+    icon: HelpCircle,
+    className:
+      "border-zinc-700 bg-zinc-900 text-zinc-400",
+  },
+
+  not_eligible: {
+    label: "Not Eligible",
+    icon: CircleX,
+    className:
+      "border-red-500/20 bg-red-500/10 text-red-400",
   },
 } satisfies Record<
-  RecoveryEligibilityType,
+  Eligibility,
   {
     label: string;
-    icon: typeof Check;
+    icon: typeof CircleCheck;
     className: string;
   }
 >;
@@ -33,15 +51,18 @@ const eligibilityConfig = {
 export function RecoveryEligibility({
   eligibility,
 }: RecoveryEligibilityProps) {
-  const config = eligibilityConfig[eligibility];
+  const config = CONFIG[eligibility];
+
   const Icon = config.icon;
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${config.className}`}
+    <Badge
+      variant="outline"
+      className={`gap-1.5 ${config.className}`}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-3 w-3" />
+
       {config.label}
-    </span>
+    </Badge>
   );
 }

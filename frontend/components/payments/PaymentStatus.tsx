@@ -1,15 +1,23 @@
 import { CircleX } from "lucide-react";
-import { FailedPayment } from "@/types/payment";
+
+import { Badge } from "@/components/ui/badge";
+import type { PaymentStatus } from "@/types/payment";
 
 interface PaymentStatusProps {
-  status: FailedPayment["status"];
+  status: PaymentStatus;
 }
 
-export function PaymentStatus({ status }: PaymentStatusProps) {
+export function PaymentStatus({
+  status,
+}: PaymentStatusProps) {
   return (
-    <div className="inline-flex items-center gap-2 text-sm text-red-400">
-      <CircleX className="h-4 w-4" />
-      <span className="capitalize">{status}</span>
-    </div>
+    <Badge
+      variant="outline"
+      className="gap-1.5 border-red-500/20 bg-red-500/10 text-red-400"
+    >
+      <CircleX className="h-3 w-3" />
+
+      {status === "failed" ? "Failed" : status}
+    </Badge>
   );
 }
