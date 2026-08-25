@@ -35,10 +35,10 @@ function Toggle({
       }`}
     >
       <span
-        className={`absolute top-1 h-4 w-4 rounded-full transition-transform ${
+        className={`absolute left-1 top-1 h-4 w-4 rounded-full transition-transform duration-200 ${
           checked
             ? "translate-x-5 bg-emerald-400"
-            : "translate-x-1 bg-zinc-600"
+            : "translate-x-0 bg-zinc-600"
         }`}
       />
     </button>
