@@ -1,3 +1,49 @@
+Part 12 — Frontend polish + shared UX
+
+Before touching FastAPI, we'll make the current frontend more production-ready:
+
+1. Global loading behavior
+2. Empty states
+3. Error states
+4. Skeleton loaders
+5. Button states
+6. Consistent badges
+7. Consistent page headers
+8. Mobile navigation verification
+9. Accessibility pass
+10. Final horizontal-overflow audit
+11. 404 page
+12. Global error boundary
+13. Final component cleanup
+
+Then your frontend will be in a very good state:
+
+                    REVRECOVER FRONTEND
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+        PRODUCT UI                INTEGRATION
+              │                         │
+              ▼                         ▼
+       All pages complete        API architecture ready
+              │                         │
+              └────────────┬────────────┘
+                           │
+                           ▼
+                     BACKEND PHASE
+                           │
+                           ▼
+                        FastAPI
+                           │
+                           ▼
+                      PostgreSQL
+
+And only when your FastAPI backend is actually implemented will we start replacing the mock services with real API calls, endpoint by endpoint.
+
+
+
+
+
 RevRecover/
 │
 ├── backend/
