@@ -19,6 +19,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
+def utc_now() -> datetime:
+    """Return the current UTC datetime."""
+    return datetime.now(timezone.utc)
+
 class OrganisationRole(str, enum.Enum):
     """
     Roles available to users inside an organisation.
@@ -68,7 +72,7 @@ class OrganisationMember(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
 
     __table_args__ = (

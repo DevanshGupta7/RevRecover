@@ -274,3 +274,17 @@ class SecurityException(RevRecoverException):
             status_code=500,
             error_code="SECURITY_ERROR"
         )
+
+class NotFoundException(RevRecoverException):
+    """
+    Raised when a requested resource does not exist.
+    """
+
+    def __init__(
+        self,
+        message: str = "Resource not found."
+    ):
+        super().__init__(
+            message=message,
+            status_code=404
+        )

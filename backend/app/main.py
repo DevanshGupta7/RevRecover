@@ -18,6 +18,7 @@ from app.core.logging_config import setup_logging
 from app.core.exceptions import RevRecoverException
 from app.core.handlers import revrecover_exception_handler
 from app.api.auth.router import router as auth_router
+from app.api.organisations.router import router as organisations_router
 
 setup_logging()
 
@@ -32,6 +33,10 @@ app.add_exception_handler(
 
 app.include_router(
     auth_router
+)
+
+app.include_router(
+    organisations_router
 )
 
 @app.get("/health")
