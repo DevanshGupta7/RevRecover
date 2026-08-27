@@ -11,14 +11,16 @@ It also configures application-wide logging and registers the
 global handler for custom RevRecover application exceptions.
 """
 
-from fastapi import FastAPI
 import logging
 
-from app.core.logging_config import setup_logging
-from app.core.exceptions import RevRecoverException
-from app.core.handlers import revrecover_exception_handler
+from fastapi import FastAPI
+
 from app.api.auth.router import router as auth_router
 from app.api.organisations.router import router as organisations_router
+from app.api.payments.router import router as payments_router
+from app.core.exceptions import RevRecoverException
+from app.core.handlers import revrecover_exception_handler
+from app.core.logging_config import setup_logging
 
 setup_logging()
 
@@ -37,6 +39,10 @@ app.include_router(
 
 app.include_router(
     organisations_router
+)
+
+app.include_router(
+    payments_router
 )
 
 @app.get("/health")

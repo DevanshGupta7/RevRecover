@@ -10,25 +10,26 @@ Database migrations can be introduced later with Alembic when the
 schema begins changing frequently.
 """
 
-from app.db.base import Base
-from app.db.database import engine
+import logging
+
 from app.core.exceptions import DatabaseException
 from app.core.logging_config import setup_logging
-from app.models import (
-    Organisation,
+from app.db.base import Base
+from app.db.database import engine
+from app.models import (  # noqa: F401
     Customer,
+    IdempotencyKey,
+    Organisation,
+    OrganisationMember,
     Payment,
     PaymentAttempt,
-    RecoveryPolicy,
-    RecoveryCase,
     RecoveryAction,
     RecoveryAttempt,
-    WebhookEvent,
-    IdempotencyKey,
+    RecoveryCase,
+    RecoveryPolicy,
     User,
-    OrganisationMember
+    WebhookEvent,
 )
-import logging
 
 setup_logging()
 

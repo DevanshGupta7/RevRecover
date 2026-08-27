@@ -1,9 +1,11 @@
-import jwt
 from datetime import datetime, timedelta, timezone
+
+import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationException
+
 
 def create_access_token(
     user_id: str,

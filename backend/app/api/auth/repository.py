@@ -1,13 +1,13 @@
 import re
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.organisation import Organisation
-from app.models.organisation_member import (
-    OrganisationMember
-)
+from app.models.organisation_member import OrganisationMember
 from app.models.user import User
+
 
 def generate_slug(name: str) -> str:
     """

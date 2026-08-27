@@ -4,6 +4,7 @@ Base SQLAlchemy configuration for RevRecover database models.
 
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(DeclarativeBase):
     """
     Base class for all RevRecover SQLAlchemy ORM models.
@@ -15,5 +16,3 @@ class Base(DeclarativeBase):
     The metadata is also used by the database initialization process
     to create the required tables in PostgreSQL.
     """
-
-    pass

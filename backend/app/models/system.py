@@ -7,17 +7,13 @@ external events and prevent duplicate operations.
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import (
-    DateTime,
-    ForeignKey,
-    String,
-    Text,
-    UniqueConstraint
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
 
 class WebhookEvent(Base):
     """

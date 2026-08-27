@@ -1,8 +1,10 @@
 from uuid import UUID
+
 from sqlalchemy.orm import Session
 
 from app.models.organisation import Organisation
 from app.models.organisation_member import OrganisationMember
+
 
 def get_organisation_by_id(
     db: Session,

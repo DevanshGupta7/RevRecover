@@ -1,17 +1,12 @@
 from typing import Annotated
 from uuid import UUID
+
 from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.api.auth.repository import (
-    get_membership,
-    get_user_by_id
-)
-from app.core.exceptions import (
-    AuthenticationException,
-    AuthorizationException
-)
+from app.api.auth.repository import get_membership, get_user_by_id
+from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.core.security.jwt import decode_token
 from app.db.database import get_db
 from app.models.organisation_member import OrganisationRole
@@ -116,7 +111,7 @@ def require_roles(*allowed_roles: OrganisationRole):
             Depends(get_current_user)
         ]
     ):
-        user, membership = current_user
+        _, membership = current_user
 
         if membership.role not in allowed_roles:
             raise AuthorizationException(

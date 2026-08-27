@@ -1,16 +1,11 @@
 from uuid import UUID
+
 from sqlalchemy.orm import Session
 
-from app.api.organisations.repository import (
-    get_organisation_by_id,
-    update_organisation
-)
-from app.api.organisations.schemas import (
-    OrganisationUpdateRequest
-)
-from app.core.exceptions import (
-    NotFoundException
-)
+from app.api.organisations.repository import get_organisation_by_id, update_organisation
+from app.api.organisations.schemas import OrganisationUpdateRequest
+from app.core.exceptions import NotFoundException
+
 
 def get_current_organisation(
     db: Session,

@@ -8,16 +8,13 @@ users and merchant organisations.
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import (
-    DateTime,
-    Enum,
-    ForeignKey,
-    UniqueConstraint
-)
+
+from sqlalchemy import DateTime, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
 
 def utc_now() -> datetime:
     """Return the current UTC datetime."""

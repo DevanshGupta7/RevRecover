@@ -13,19 +13,17 @@ plans and executes.
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Numeric,
-    String,
-    Text
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+
+def utc_now() -> datetime:
+    """Return the current UTC datetime."""
+    return datetime.now(timezone.utc)
 
 class RecoveryPolicy(Base):
     """
@@ -121,14 +119,14 @@ class RecoveryPolicy(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
+        default=utc_now,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc)
+        default=utc_now,
+        onupdate=utc_now
     )
 
 class RecoveryCase(Base):
@@ -272,14 +270,14 @@ class RecoveryCase(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc)
+        default=utc_now,
+        onupdate=utc_now
     )
 
 class RecoveryAction(Base):
@@ -346,7 +344,7 @@ class RecoveryAction(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
 
 class RecoveryAttempt(Base):
@@ -421,5 +419,5 @@ class RecoveryAttempt(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
