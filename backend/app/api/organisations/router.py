@@ -1,19 +1,20 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
 from uuid import UUID
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.api.organisations.dependencies import (
     get_current_organisation_id,
-    require_roles
+    require_roles,
 )
 from app.api.organisations.schemas import (
     OrganisationResponse,
-    OrganisationUpdateRequest
+    OrganisationUpdateRequest,
 )
 from app.api.organisations.service import (
     get_current_organisation,
-    update_current_organisation
+    update_current_organisation,
 )
 from app.db.database import get_db
 from app.models.organisation_member import OrganisationRole

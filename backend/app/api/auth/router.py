@@ -1,22 +1,17 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.auth.dependencies import (
-    get_current_user
-)
+from app.api.auth.dependencies import get_current_user
 from app.api.auth.schemas.auth import (
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
-    UserResponse
+    UserResponse,
 )
-from app.api.auth.service import (
-    authenticate_user,
-    refresh_access_token,
-    register_user
-)
+from app.api.auth.service import authenticate_user, refresh_access_token, register_user
 from app.db.database import get_db
 
 router = APIRouter(

@@ -1,29 +1,27 @@
-from sqlalchemy.orm import Session
 import logging
 
-from app.models.organisation_member import OrganisationRole
+from sqlalchemy.orm import Session
+
 from app.api.auth.repository import (
     create_membership,
     create_organisation,
     create_user,
     get_membership,
     get_user_by_email,
-    get_user_by_id
+    get_user_by_id,
 )
 from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
-    ConflictException
+    ConflictException,
 )
 from app.core.security.jwt import (
     create_access_token,
     create_refresh_token,
-    decode_token
+    decode_token,
 )
-from app.core.security.password import (
-    hash_password,
-    verify_password
-)
+from app.core.security.password import hash_password, verify_password
+from app.models.organisation_member import OrganisationRole
 
 logger = logging.getLogger(__name__)
 

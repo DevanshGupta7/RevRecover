@@ -1,12 +1,10 @@
 from typing import Annotated
 from uuid import UUID
+
 from fastapi import Depends
 
 from app.api.auth.dependencies import get_current_user
-from app.models.organisation_member import (
-    OrganisationMember,
-    OrganisationRole
-)
+from app.models.organisation_member import OrganisationMember, OrganisationRole
 
 CurrentUser = Annotated[
     tuple,

@@ -1,52 +1,42 @@
 """
 Payment models for RevRecover.
 
-This module defines payment records and individual payment attempts.
-A payment represents the business-level payment event, while a
-payment attempt represents an individual attempt to process that
-payment.
+A Payment represents the business-level payment event.
+A PaymentAttempt represents an individual attempt to process
+that payment.
 """
 
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+
 from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     Numeric,
-    String
+    String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
+
+def utc_now() -> datetime:
+    """Return the current UTC datetime."""
+    return datetime.now(timezone.utc)
+
 class Payment(Base):
     """
     Represent a payment associated with a customer.
 
-    A payment belongs to an organisation and customer and contains
-    information about the payment provider, amount, currency, current
-    status, and failure information.
-
-    A single payment may have multiple payment attempts.
-
-    Attributes:
-        id: Unique UUID identifying the payment.
-        organisation_id: UUID of the organisation owning the payment.
-        customer_id: UUID of the customer associated with the payment.
-        amount: Monetary amount of the payment.
-        currency: ISO currency code, such as INR.
-        status: Current payment status.
-        provider: Payment provider used to process the payment.
-        provider_payment_id: Payment identifier assigned by the provider.
-        failure_reason: Human-readable reason for a payment failure.
-        failure_code: Provider-specific failure code.
-        created_at: Timestamp when the payment was created.
-        updated_at: Timestamp when the payment was last updated.
+    A payment belongs to an organisation and customer and may have
+    multiple processing attempts.
     """
-    
+
     __tablename__ = "payments"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -57,14 +47,20 @@ class Payment(Base):
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("organisations.id", ondelete="CASCADE"),
+        ForeignKey(
+            "organisations.id",
+            ondelete="CASCADE"
+        ),
         nullable=False,
         index=True
     )
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("customers.id", ondelete="CASCADE"),
+        ForeignKey(
+            "customers.id",
+            ondelete="CASCADE"
+        ),
         nullable=False,
         index=True
     )
@@ -89,7 +85,8 @@ class Payment(Base):
     provider: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="razorpay"
+        default="razorpay",
+        index=True
     )
 
     provider_payment_id: Mapped[str | None] = mapped_column(
@@ -111,14 +108,14 @@ class Payment(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc)
+        default=utc_now,
+        onupdate=utc_now
     )
 
     __table_args__ = (
@@ -127,29 +124,24 @@ class Payment(Base):
             "organisation_id",
             "provider_payment_id",
         ),
+        Index(
+            "ix_payments_org_status",
+            "organisation_id",
+            "status",
+        ),
+        Index(
+            "ix_payments_org_customer",
+            "organisation_id",
+            "customer_id",
+        ),
     )
+
 
 class PaymentAttempt(Base):
     """
     Represent an individual attempt to process a payment.
-
-    A payment can have multiple attempts. Tracking each attempt
-    separately allows RevRecover to understand payment failure
-    patterns and determine whether additional recovery attempts
-    may be appropriate.
-
-    Attributes:
-        id: Unique UUID identifying the payment attempt.
-        payment_id: UUID of the payment being attempted.
-        attempt_number: Sequential number of this attempt.
-        status: Result or current status of the attempt.
-        provider_attempt_id: Provider-specific identifier for the attempt.
-        failure_reason: Human-readable reason for failure.
-        failure_code: Provider-specific failure code.
-        attempted_at: Timestamp when the payment was attempted.
-        created_at: Timestamp when the attempt record was created.
     """
-    
+
     __tablename__ = "payment_attempts"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -160,12 +152,16 @@ class PaymentAttempt(Base):
 
     payment_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("payments.id", ondelete="CASCADE"),
+        ForeignKey(
+            "payments.id",
+            ondelete="CASCADE"
+        ),
         nullable=False,
         index=True
     )
 
     attempt_number: Mapped[int] = mapped_column(
+        Integer,
         nullable=False
     )
 
@@ -193,11 +189,19 @@ class PaymentAttempt(Base):
     attempted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
+        default=utc_now
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "payment_id",
+            "attempt_number",
+            name="uq_payment_attempt_number",
+        ),
     )
