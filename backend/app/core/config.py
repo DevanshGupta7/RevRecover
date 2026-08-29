@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     JWT_ALGORITHM: str = "HS256"
+    
+    RAZORPAY_KEY_ID: str
+    RAZORPAY_KEY_SECRET: str
+    RAZORPAY_WEBHOOK_SECRET: str
+    RAZORPAY_ENABLED: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

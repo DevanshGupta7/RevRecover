@@ -1,3 +1,12 @@
+Tests to perform before every commit:-
+python -m compileall app
+ruff check .
+pytest
+pytest tests\unit\integrations\razorpay -v
+
+
+
+
 Part 12 — Frontend polish + shared UX
 
 Before touching FastAPI, we'll make the current frontend more production-ready:
@@ -232,6 +241,3 @@ frontend/
     ├── api.ts
     ├── utils.ts
     └── constants.ts
-
-
-

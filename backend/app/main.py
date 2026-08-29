@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from app.api.auth.router import router as auth_router
 from app.api.organisations.router import router as organisations_router
 from app.api.payments.router import router as payments_router
+from app.api.webhooks.razorpay import router as razorpay_webhook_router
 from app.core.exceptions import RevRecoverException
 from app.core.handlers import revrecover_exception_handler
 from app.core.logging_config import setup_logging
@@ -43,6 +44,10 @@ app.include_router(
 
 app.include_router(
     payments_router
+)
+
+app.include_router(
+    razorpay_webhook_router
 )
 
 @app.get("/health")
