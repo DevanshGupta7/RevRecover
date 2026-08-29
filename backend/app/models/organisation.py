@@ -49,6 +49,13 @@ class Organisation(Base):
         unique=True,
         index=True,
     )
+    
+    razorpay_account_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        unique=True,
+        index=True
+    )
 
     status: Mapped[str] = mapped_column(
         String(50),

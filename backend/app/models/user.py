@@ -15,6 +15,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
+def utc_now() -> datetime:
+    """Return the current UTC datetime."""
+    return datetime.now(timezone.utc)
+
 
 class User(Base):
     """
@@ -68,12 +72,12 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
+        default=utc_now
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc),
+        default=utc_now,
+        onupdate=utc_now
     )

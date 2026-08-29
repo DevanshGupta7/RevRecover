@@ -6,10 +6,11 @@ from app.models.recovery import (
     RecoveryAction,
     RecoveryAttempt,
     RecoveryCase,
-    RecoveryPolicy,
+    RecoveryPolicy
 )
-from app.models.system import IdempotencyKey, WebhookEvent
+from app.models.system import IdempotencyKey
 from app.models.user import User
+from app.models.webhook_event import WebhookEvent
 
 __all__ = [
     "Customer",

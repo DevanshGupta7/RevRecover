@@ -14,96 +14,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
+def utc_now() -> datetime:
+    """Return the current UTC datetime."""
+    return datetime.now(timezone.utc)
 
-class WebhookEvent(Base):
-    """
-    Store an incoming webhook event from an external provider.
-
-    Webhook events provide a durable record of external notifications,
-    such as Razorpay payment events. Storing the original payload and
-    processing status allows RevRecover to safely process, retry,
-    and debug webhook handling.
-
-    Attributes:
-        id: Unique UUID identifying the stored webhook event.
-        organisation_id: UUID of the associated organisation, when known.
-        provider: External provider that generated the event.
-        event_type: Type of webhook event received.
-        provider_event_id: Provider-generated event identifier.
-        payload: Original webhook payload stored as JSON.
-        status: Current processing status of the event.
-        received_at: Timestamp when the event was received.
-        processed_at: Timestamp when processing completed.
-        error_message: Error information if processing failed.
-    """
-    
-    __tablename__ = "webhook_events"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
-    )
-
-    organisation_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("organisations.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True
-    )
-
-    provider: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="razorpay"
-    )
-
-    event_type: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False
-    )
-
-    provider_event_id: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        index=True
-    )
-
-    payload: Mapped[dict] = mapped_column(
-        JSONB,
-        nullable=False
-    )
-
-    status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="received",
-        index=True
-    )
-
-    received_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=datetime.now(timezone.utc)
-    )
-
-    processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
-    )
-
-    error_message: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "provider",
-            "provider_event_id",
-            name="uq_webhook_provider_event",
-        ),
-    )
 
 class IdempotencyKey(Base):
     """
@@ -159,7 +73,7 @@ class IdempotencyKey(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.now(timezone.utc)
+        default=utc_now
     )
 
     expires_at: Mapped[datetime | None] = mapped_column(
