@@ -43,6 +43,9 @@ def update_current_organisation(
 
     if request.name is not None:
         organisation.name = request.name.strip()
+        
+    if request.razorpay_account_id is not None:
+        organisation.razorpay_account_id = request.razorpay_account_id.strip()
 
     return update_organisation(
         db=db,

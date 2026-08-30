@@ -170,6 +170,12 @@ class PaymentAttempt(Base):
         nullable=False,
         index=True
     )
+    
+    provider_event_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True
+    )
 
     provider_attempt_id: Mapped[str | None] = mapped_column(
         String(255),
