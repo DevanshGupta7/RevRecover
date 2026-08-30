@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     RAZORPAY_WEBHOOK_SECRET: str
     RAZORPAY_ENABLED: bool = True
 
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-5-nano"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
