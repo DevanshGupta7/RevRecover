@@ -28,7 +28,7 @@ from app.models import (  # noqa: F401
     RecoveryCase,
     RecoveryPolicy,
     User,
-    WebhookEvent
+    WebhookEvent,
 )
 
 setup_logging()

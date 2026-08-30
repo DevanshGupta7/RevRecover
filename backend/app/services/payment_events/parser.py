@@ -79,7 +79,7 @@ def parse_payment_event(
     event_type = payload.get("event")
 
     if not isinstance(event_type, str):
-        raise ValueError(
+        raise TypeError(
             "Webhook event type is missing."
         )
 
@@ -99,7 +99,7 @@ def parse_payment_event(
     payment = payment_wrapper.get("entity", {})
 
     if not isinstance(payment, dict):
-        raise ValueError(
+        raise TypeError(
             "Payment entity is missing from webhook payload."
         )
 
@@ -119,6 +119,9 @@ def parse_payment_event(
         event_type=event_type,
         provider_event_id=provider_event_id,
         provider_account_id=account_id,
+        customer_email=payment.get("email"),
+        customer_phone=payment.get("contact"),
+        customer_name=None,
         payment_id=payment_id,
         order_id=payment.get("order_id"),
         amount_subunits=payment.get("amount"),

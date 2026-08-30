@@ -6,7 +6,7 @@ from app.models.recovery import (
     RecoveryAction,
     RecoveryAttempt,
     RecoveryCase,
-    RecoveryPolicy
+    RecoveryPolicy,
 )
 from app.models.system import IdempotencyKey
 from app.models.user import User

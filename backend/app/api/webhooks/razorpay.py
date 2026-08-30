@@ -1,32 +1,18 @@
 import json
 import logging
 
-from fastapi import (
-    APIRouter,
-    Header,
-    HTTPException,
-    Request,
-    Depends
-)
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.api.webhooks.organisation_repository import (
+    get_organisation_by_razorpay_account_id,
+)
+from app.api.webhooks.repository import create_webhook_event
 from app.core.config import settings
 from app.db.database import get_db
-from app.integrations.razorpay.exceptions import (
-    RazorpaySignatureException
-)
-from app.integrations.razorpay.webhooks import (
-    verify_webhook_signature
-)
-from app.api.webhooks.organisation_repository import (
-    get_organisation_by_razorpay_account_id
-)
-from app.api.webhooks.repository import (
-    create_webhook_event
-)
-from app.services.payment_events.parser import (
-    parse_payment_event
-)
+from app.integrations.razorpay.exceptions import RazorpaySignatureException
+from app.integrations.razorpay.webhooks import verify_webhook_signature
+from app.services.payment_events.parser import parse_payment_event
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +27,7 @@ router = APIRouter(
 )
 async def razorpay_webhook(
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db), # noqa: B008
     x_razorpay_signature: str | None = Header(
         default=None,
         alias="X-Razorpay-Signature",
@@ -150,7 +136,7 @@ async def razorpay_webhook(
             detail=str(exc)
         ) from exc
         
-    webhook_event, created = create_webhook_event(
+    _webhook_event, created = create_webhook_event(
         db=db,
         organisation_id=organisation.id,
         provider="razorpay",

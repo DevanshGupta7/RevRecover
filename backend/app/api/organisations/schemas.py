@@ -13,6 +13,7 @@ class OrganisationResponse(BaseModel):
     name: str
     slug: str
     status: str
+    razorpay_account_id: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -23,6 +24,11 @@ class OrganisationUpdateRequest(BaseModel):
         default=None,
         min_length=2,
         max_length=255
+    )
+    
+    razorpay_account_id: str | None = Field(
+        default=None,
+        max_length=100
     )
 
 class OrganisationMemberResponse(BaseModel):

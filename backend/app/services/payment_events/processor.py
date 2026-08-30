@@ -7,10 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.customer import Customer
 from app.models.payment import Payment, PaymentAttempt
 from app.services.payment_events.parser import ParsedPaymentEvent
-from app.services.payment_events.status import (
-    should_update_payment_status
-)
-
+from app.services.payment_events.status import should_update_payment_status
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +20,7 @@ def subunits_to_decimal(
             "Payment amount is missing from Razorpay event."
         )
 
-    return Decimal(amount_subunits) / Decimal("100")
+    return Decimal(amount_subunits) / Decimal(100)
 
 def get_customer_by_email(
     db: Session,

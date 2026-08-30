@@ -1,8 +1,8 @@
 Tests to perform before every commit:-
 python -m compileall app
 ruff check .
-pytest
-pytest tests\unit\integrations\razorpay -v
+python -m pytest
+python -m pytest tests\unit -v
 
 
 
