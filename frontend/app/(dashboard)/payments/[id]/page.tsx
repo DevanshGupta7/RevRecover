@@ -27,7 +27,7 @@ export default async function PaymentDetailsPage({
 }: PaymentDetailsPageProps) {
   const { id } = await params;
 
-  const payment = getPaymentById(id);
+  const payment = await getPaymentById(id);
 
   if (!payment) {
     notFound();

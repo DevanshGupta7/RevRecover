@@ -7,7 +7,11 @@ import type {
 } from "@/lib/api-types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:8000";
+
+const AUTH_TOKEN_STORAGE_KEY =
+  "revrecover_access_token";
 
 interface RequestOptions
   extends RequestInit {
@@ -15,6 +19,39 @@ interface RequestOptions
     string,
     string | number | boolean | undefined
   >;
+}
+
+export function getAuthToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (
+    window.localStorage.getItem(
+      AUTH_TOKEN_STORAGE_KEY
+    ) ?? null
+  );
+}
+
+export function setAuthToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    AUTH_TOKEN_STORAGE_KEY,
+    token
+  );
+}
+
+export function clearAuthToken() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(
+    AUTH_TOKEN_STORAGE_KEY
+  );
 }
 
 function buildUrl(
@@ -81,6 +118,7 @@ async function request<T>(
   } = options;
 
   const url = buildUrl(path, params);
+  const authToken = getAuthToken();
 
   let response: Response;
 
@@ -91,7 +129,11 @@ async function request<T>(
       headers: {
         "Content-Type":
           "application/json",
-
+        ...(authToken
+          ? {
+              Authorization: `Bearer ${authToken}`,
+            }
+          : {}),
         ...headers,
       },
     });

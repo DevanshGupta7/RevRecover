@@ -26,7 +26,7 @@ export default async function RecoveryDetailsPage({
 }: RecoveryDetailsPageProps) {
   const { id } = await params;
 
-  const recoveryCase = getRecoveryCaseById(id);
+  const recoveryCase = await getRecoveryCaseById(id);
 
   if (!recoveryCase) {
     notFound();
