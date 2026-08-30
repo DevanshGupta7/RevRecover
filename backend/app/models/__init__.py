@@ -6,11 +6,12 @@ from app.models.recovery import (
     RecoveryAction,
     RecoveryAttempt,
     RecoveryCase,
-    RecoveryPolicy,
+    RecoveryPolicy
 )
 from app.models.system import IdempotencyKey
 from app.models.user import User
 from app.models.webhook_event import WebhookEvent
+from app.models.ai_decision import AIDecision
 
 __all__ = [
     "Customer",
@@ -24,5 +25,6 @@ __all__ = [
     "RecoveryCase",
     "RecoveryPolicy",
     "User",
-    "WebhookEvent"
+    "WebhookEvent",
+    "AIDecision"
 ]
