@@ -12,6 +12,8 @@ const API_BASE_URL =
 
 const AUTH_TOKEN_STORAGE_KEY =
   "revrecover_access_token";
+const REFRESH_TOKEN_STORAGE_KEY =
+  "revrecover_refresh_token";
 
 interface RequestOptions
   extends RequestInit {
@@ -44,6 +46,27 @@ export function setAuthToken(token: string) {
   );
 }
 
+export function getRefreshToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(
+    REFRESH_TOKEN_STORAGE_KEY
+  );
+}
+
+export function setRefreshToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    REFRESH_TOKEN_STORAGE_KEY,
+    token
+  );
+}
+
 export function clearAuthToken() {
   if (typeof window === "undefined") {
     return;
@@ -51,6 +74,9 @@ export function clearAuthToken() {
 
   window.localStorage.removeItem(
     AUTH_TOKEN_STORAGE_KEY
+  );
+  window.localStorage.removeItem(
+    REFRESH_TOKEN_STORAGE_KEY
   );
 }
 
@@ -109,7 +135,8 @@ async function parseResponse(
 
 async function request<T>(
   path: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
+  retryOnUnauthorized = true
 ): Promise<T> {
   const {
     params,
@@ -146,6 +173,39 @@ async function request<T>(
   }
 
   const body = await parseResponse(response);
+
+  if (
+    response.status === 401 &&
+    retryOnUnauthorized &&
+    getRefreshToken() &&
+    !path.endsWith("/auth/refresh") &&
+    !path.endsWith("/auth/login")
+  ) {
+    const refreshResponse = await fetch(
+      buildUrl("/auth/refresh"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refresh_token: getRefreshToken(),
+        }),
+      }
+    );
+
+    if (refreshResponse.ok) {
+      const refreshBody = (await refreshResponse.json()) as {
+        access_token: string;
+        refresh_token: string;
+      };
+
+      setAuthToken(refreshBody.access_token);
+      setRefreshToken(refreshBody.refresh_token);
+
+      return request(path, options, false);
+    }
+
+    clearAuthToken();
+  }
 
   if (!response.ok) {
     const errorBody =

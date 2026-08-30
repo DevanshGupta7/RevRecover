@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import {
   Activity,
   CircleDollarSign,
@@ -10,7 +14,11 @@ import { RevenueRecoveryChart } from "@/components/dashboard/RevenueRecoveryChar
 import { FailureReasons } from "@/components/dashboard/FailureReasons";
 import { RecoveryFunnel } from "@/components/dashboard/RecoveryFunnel";
 import { RecoveryInsights } from "@/components/dashboard/RecoveryInsights";
+
 import { getDashboardData } from "@/services/dashboard.service";
+import { useAuth } from "@/contexts/auth-context";
+
+import type { DashboardData } from "@/types/dashboard";
 
 function formatIndianCurrency(value: number) {
   if (value >= 10000000) {
@@ -28,12 +36,66 @@ function formatIndianCurrency(value: number) {
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
-export default async function DashboardPage() {
-  const dashboard = await getDashboardData();
+export default function DashboardPage() {
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+  } = useAuth();
+
+  const [dashboard, setDashboard] =
+    useState<DashboardData | null>(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDashboard() {
+      try {
+        setIsLoading(true);
+
+        const data = await getDashboardData();
+
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isAuthenticated]);
+
+  if (authLoading || isLoading || !dashboard) {
+    return (
+      <div className="flex min-h-full items-center justify-center">
+        <p className="text-sm text-zinc-500">
+          Loading dashboard...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full">
       <div className="mx-auto w-full max-w-[1600px] p-5 md:p-8">
+
         {/* Header */}
         <section className="mb-8">
           <div className="flex flex-col gap-1">
@@ -137,6 +199,7 @@ export default async function DashboardPage() {
             insights={dashboard.insights}
           />
         </section>
+
       </div>
     </div>
   );

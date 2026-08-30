@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/auth-context";
 
 interface NavbarProps {
   onMobileMenuOpen: () => void;
@@ -61,7 +62,21 @@ export function Navbar({
   onSidebarToggle,
 }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const pageTitle = getPageTitle(pathname);
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/login");
+  };
+
+  const userInitials = user?.full_name
+    ?.split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "RR";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-950/95 px-4 backdrop-blur md:px-6">
@@ -134,13 +149,13 @@ export function Navbar({
             >
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="bg-zinc-800 text-xs text-zinc-200">
-                  DG
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
 
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-medium">Devansh Gupta</p>
-                <p className="text-[10px] text-zinc-500">Administrator</p>
+                <p className="text-xs font-medium">{user?.full_name ?? "RevRecover User"}</p>
+                <p className="text-[10px] text-zinc-500">{user?.role ?? "User"}</p>
               </div>
 
               <ChevronDown className="hidden h-3.5 w-3.5 text-zinc-500 sm:block" />
@@ -151,7 +166,9 @@ export function Navbar({
             align="end"
             className="w-52 border-zinc-800 bg-zinc-950 text-zinc-200"
           >
-            <DropdownMenuLabel>Account</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {user ? user.email : "Account"}
+            </DropdownMenuLabel>
 
             <DropdownMenuSeparator className="bg-zinc-800" />
 
@@ -159,13 +176,19 @@ export function Navbar({
               Profile
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900">
+            <DropdownMenuItem
+              className="cursor-pointer focus:bg-zinc-900"
+              onSelect={() => router.push("/settings")}
+            >
               Settings
             </DropdownMenuItem>
 
             <DropdownMenuSeparator className="bg-zinc-800" />
 
-            <DropdownMenuItem className="cursor-pointer text-zinc-400 focus:bg-zinc-900 focus:text-zinc-100">
+            <DropdownMenuItem
+              className="cursor-pointer text-zinc-400 focus:bg-zinc-900 focus:text-zinc-100"
+              onSelect={handleLogout}
+            >
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

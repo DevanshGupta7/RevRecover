@@ -277,24 +277,32 @@ export async function getDashboardData(): Promise<DashboardData> {
         },
       ],
     };
-  } catch {
-    return {
-      metrics: {
-        revenueAtRisk: 0,
-        revenueRecovered: 0,
-        recoveryRate: 0,
-        activeCases: 0,
-      },
-      revenueRecovery: [],
-      failureReasons: [],
-      recoveryPipeline: {
-        failed: 0,
-        eligible: 0,
-        contacted: 0,
-        retried: 0,
-        recovered: 0,
-      },
-      insights: [],
-    };
+    } catch (error) {
+    console.error(
+      "Failed to load dashboard data:",
+      error
+    );
+
+    throw error;
   }
+  // } catch {
+  //   return {
+  //     metrics: {
+  //       revenueAtRisk: 0,
+  //       revenueRecovered: 0,
+  //       recoveryRate: 0,
+  //       activeCases: 0,
+  //     },
+  //     revenueRecovery: [],
+  //     failureReasons: [],
+  //     recoveryPipeline: {
+  //       failed: 0,
+  //       eligible: 0,
+  //       contacted: 0,
+  //       retried: 0,
+  //       recovered: 0,
+  //     },
+  //     insights: [],
+  //   };
+  // }
 }
