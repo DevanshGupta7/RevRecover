@@ -13,7 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     String,
-    Text,
+    Text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -35,81 +35,81 @@ class AIDecision(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=uuid.uuid4
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey(
             "organisations.id",
-            ondelete="CASCADE",
+            ondelete="CASCADE"
         ),
         nullable=False,
-        index=True,
+        index=True
     )
 
     recovery_case_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey(
             "recovery_cases.id",
-            ondelete="CASCADE",
+            ondelete="CASCADE"
         ),
         nullable=False,
-        index=True,
+        index=True
     )
 
     provider: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="openai",
+        default="openai"
     )
 
     model: Mapped[str] = mapped_column(
         String(100),
-        nullable=False,
+        nullable=False
     )
 
     diagnosis: Mapped[str] = mapped_column(
         String(255),
-        nullable=False,
+        nullable=False
     )
 
     recommended_action: Mapped[str] = mapped_column(
         String(100),
-        nullable=False,
+        nullable=False
     )
 
     recommended_delay_hours: Mapped[int | None] = mapped_column(
-        nullable=True,
+        nullable=True
     )
 
     confidence: Mapped[Decimal] = mapped_column(
         Numeric(5, 2),
-        nullable=False,
+        nullable=False
     )
 
     reasoning_summary: Mapped[str] = mapped_column(
         Text,
-        nullable=False,
+        nullable=False
     )
 
     requires_human_approval: Mapped[bool] = mapped_column(
         nullable=False,
-        default=False,
+        default=False
     )
 
     input_context: Mapped[dict] = mapped_column(
         JSONB,
-        nullable=False,
+        nullable=False
     )
 
     raw_output: Mapped[dict] = mapped_column(
         JSONB,
-        nullable=False,
+        nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(timezone.utc)
     )
