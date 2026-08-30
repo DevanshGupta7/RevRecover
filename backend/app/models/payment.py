@@ -29,6 +29,7 @@ def utc_now() -> datetime:
     """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
+
 class Payment(Base):
     """
     Represent a payment associated with a customer.
@@ -40,82 +41,47 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey(
-            "organisations.id",
-            ondelete="CASCADE"
-        ),
+        ForeignKey("organisations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey(
-            "customers.id",
-            ondelete="CASCADE"
-        ),
+        ForeignKey("customers.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    amount: Mapped[Decimal] = mapped_column(
-        Numeric(15, 2),
-        nullable=False
-    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
 
-    currency: Mapped[str] = mapped_column(
-        String(3),
-        nullable=False,
-        default="INR"
-    )
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
 
-    status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        index=True
-    )
+    status: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
     provider: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="razorpay",
-        index=True
+        String(50), nullable=False, default="razorpay", index=True
     )
 
     provider_payment_id: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        index=True
+        String(255), nullable=True, index=True
     )
 
-    failure_reason: Mapped[str | None] = mapped_column(
-        String(500),
-        nullable=True
-    )
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
-    failure_code: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True
-    )
+    failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
 
     __table_args__ = (
@@ -145,63 +111,36 @@ class PaymentAttempt(Base):
     __tablename__ = "payment_attempts"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     payment_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey(
-            "payments.id",
-            ondelete="CASCADE"
-        ),
+        ForeignKey("payments.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    attempt_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False
-    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        index=True
-    )
-    
+    status: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+
     provider_event_id: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        index=True
+        String(255), nullable=True, index=True
     )
 
-    provider_attempt_id: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True
-    )
+    provider_attempt_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    failure_reason: Mapped[str | None] = mapped_column(
-        String(500),
-        nullable=True
-    )
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
-    failure_code: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True
-    )
+    failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     attempted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     __table_args__ = (

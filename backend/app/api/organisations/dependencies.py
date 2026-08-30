@@ -6,14 +6,10 @@ from fastapi import Depends
 from app.api.auth.dependencies import get_current_user
 from app.models.organisation_member import OrganisationMember, OrganisationRole
 
-CurrentUser = Annotated[
-    tuple,
-    Depends(get_current_user)
-]
+CurrentUser = Annotated[tuple, Depends(get_current_user)]
 
-def get_current_membership(
-    current_user: CurrentUser
-) -> OrganisationMember:
+
+def get_current_membership(current_user: CurrentUser) -> OrganisationMember:
     """
     Return the authenticated user's current organisation membership.
     """
@@ -22,9 +18,8 @@ def get_current_membership(
 
     return membership
 
-def get_current_organisation_id(
-    current_user: CurrentUser
-) -> UUID:
+
+def get_current_organisation_id(current_user: CurrentUser) -> UUID:
     """
     Return the organisation ID associated with the
     authenticated user's membership.
@@ -34,16 +29,13 @@ def get_current_organisation_id(
 
     return membership.organisation_id
 
-def require_roles(
-    *allowed_roles: OrganisationRole
-):
+
+def require_roles(*allowed_roles: OrganisationRole):
     """
     Create a dependency requiring one of the supplied roles.
     """
 
-    def role_dependency(
-        current_user: CurrentUser
-    ) -> OrganisationMember:
+    def role_dependency(current_user: CurrentUser) -> OrganisationMember:
         _, membership = current_user
 
         if membership.role not in allowed_roles:

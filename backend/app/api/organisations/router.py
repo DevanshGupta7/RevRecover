@@ -19,56 +19,27 @@ from app.api.organisations.service import (
 from app.db.database import get_db
 from app.models.organisation_member import OrganisationRole
 
-router = APIRouter(
-    prefix="/organisations",
-    tags=["Organisations"]
-)
+router = APIRouter(prefix="/organisations", tags=["Organisations"])
 
-@router.get(
-    "/current",
-    response_model=OrganisationResponse
-)
+
+@router.get("/current", response_model=OrganisationResponse)
 def get_current_organisation_endpoint(
-    organisation_id: Annotated[
-        UUID,
-        Depends(get_current_organisation_id)
-    ],
-    db: Annotated[
-        Session,
-        Depends(get_db)
-    ]
+    organisation_id: Annotated[UUID, Depends(get_current_organisation_id)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """
     Return the organisation belonging to the authenticated user.
     """
 
-    return get_current_organisation(
-        db=db,
-        organisation_id=organisation_id
-    )
+    return get_current_organisation(db=db, organisation_id=organisation_id)
 
-@router.patch(
-    "/current",
-    response_model=OrganisationResponse
-)
+
+@router.patch("/current", response_model=OrganisationResponse)
 def update_current_organisation_endpoint(
     request: OrganisationUpdateRequest,
-    organisation_id: Annotated[
-        UUID,
-        Depends(get_current_organisation_id)
-    ],
-    _: Annotated[
-        object,
-        Depends(
-            require_roles(
-                OrganisationRole.ADMIN
-            )
-        )
-    ],
-    db: Annotated[
-        Session,
-        Depends(get_db)
-    ]
+    organisation_id: Annotated[UUID, Depends(get_current_organisation_id)],
+    _: Annotated[object, Depends(require_roles(OrganisationRole.ADMIN))],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """
     Update the current organisation.
@@ -77,7 +48,5 @@ def update_current_organisation_endpoint(
     """
 
     return update_current_organisation(
-        db=db,
-        organisation_id=organisation_id,
-        request=request
+        db=db, organisation_id=organisation_id, request=request
     )

@@ -11,6 +11,4 @@ def get_payment_provider() -> PaymentProvider:
     Return the configured payment provider.
     """
 
-    return RazorpayService(
-        client=RazorpayClient()
-    )
+    return RazorpayService(client=RazorpayClient())

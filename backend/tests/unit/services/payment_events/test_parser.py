@@ -20,17 +20,14 @@ def test_parse_payment_failed_event():
                     "contact": "9999999999",
                     "error": {
                         "code": "BAD_REQUEST_ERROR",
-                        "description": "Payment failed"
-                    }
+                        "description": "Payment failed",
+                    },
                 }
             }
-        }
+        },
     }
 
-    event = parse_payment_event(
-        payload=payload,
-        provider_event_id="evt_test"
-    )
+    event = parse_payment_event(payload=payload, provider_event_id="evt_test")
 
     assert event.event_type == "payment.failed"
     assert event.payment_id == "pay_test"
@@ -46,14 +43,12 @@ def test_unsupported_event_is_rejected():
         "account_id": "acc_test",
         "event": "payment.unknown",
         "created_at": 1700000000,
-        "payload": {}
+        "payload": {},
     }
 
     with pytest.raises(ValueError):
-        parse_payment_event(
-            payload=payload,
-            provider_event_id="evt_test"
-        )
+        parse_payment_event(payload=payload, provider_event_id="evt_test")
+
 
 def test_missing_payment_id_is_rejected():
     payload = {
@@ -62,17 +57,10 @@ def test_missing_payment_id_is_rejected():
         "created_at": 1700000000,
         "payload": {
             "payment": {
-                "entity": {
-                    "amount": 450000,
-                    "currency": "INR",
-                    "status": "failed"
-                }
+                "entity": {"amount": 450000, "currency": "INR", "status": "failed"}
             }
-        }
+        },
     }
 
     with pytest.raises(ValueError):
-        parse_payment_event(
-            payload=payload,
-            provider_event_id="evt_test"
-        )
+        parse_payment_event(payload=payload, provider_event_id="evt_test")

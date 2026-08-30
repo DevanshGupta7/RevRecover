@@ -8,17 +8,13 @@ from app.models.webhook_event import WebhookEvent
 
 
 def get_webhook_event_by_provider_id(
-    db: Session,
-    *,
-    provider: str,
-    provider_event_id: str
+    db: Session, *, provider: str, provider_event_id: str
 ) -> WebhookEvent | None:
     return (
         db.query(WebhookEvent)
         .filter(
             WebhookEvent.provider == provider,
-            WebhookEvent.provider_event_id
-            == provider_event_id
+            WebhookEvent.provider_event_id == provider_event_id,
         )
         .first()
     )
@@ -34,7 +30,7 @@ def create_webhook_event(
     event_type: str,
     payload: dict,
     signature: str | None,
-    provider_created_at: datetime | None
+    provider_created_at: datetime | None,
 ) -> tuple[WebhookEvent, bool]:
     event = WebhookEvent(
         organisation_id=organisation_id,
@@ -45,7 +41,7 @@ def create_webhook_event(
         payload=payload,
         signature=signature,
         provider_created_at=provider_created_at,
-        status="received"
+        status="received",
     )
 
     db.add(event)
@@ -56,9 +52,7 @@ def create_webhook_event(
         db.rollback()
 
         existing = get_webhook_event_by_provider_id(
-            db,
-            provider=provider,
-            provider_event_id=provider_event_id
+            db, provider=provider, provider_event_id=provider_event_id
         )
 
         if existing:

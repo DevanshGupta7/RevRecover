@@ -22,6 +22,7 @@ class PaymentFailedEvent:
     failure_reason: str | None
     failure_code: str | None
 
+
 def create_payment_failed_event(
     *,
     organisation_id: UUID,

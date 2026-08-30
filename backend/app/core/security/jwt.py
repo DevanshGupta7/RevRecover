@@ -7,11 +7,7 @@ from app.core.config import settings
 from app.core.exceptions import AuthenticationException
 
 
-def create_access_token(
-    user_id: str,
-    organisation_id: str,
-    role: str
-) -> str:
+def create_access_token(user_id: str, organisation_id: str, role: str) -> str:
     """
     Create a short-lived JWT access token.
 
@@ -31,20 +27,15 @@ def create_access_token(
         "role": role,
         "type": "access",
         "iat": now,
-        "exp": now + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     }
 
     return jwt.encode(
-        payload,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
 
-def create_refresh_token(
-    user_id: str
-) -> str:
+
+def create_refresh_token(user_id: str) -> str:
     """
     Create a longer-lived JWT refresh token.
 
@@ -58,17 +49,14 @@ def create_refresh_token(
         "sub": user_id,
         "type": "refresh",
         "iat": now,
-        "exp": now + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        )
+        "exp": now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     }
 
     return jwt.encode(
-        payload,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
-    
+
+
 def decode_token(token: str) -> dict:
     """
     Decode and verify a JWT token.
@@ -86,11 +74,7 @@ def decode_token(token: str) -> dict:
         )
 
     except ExpiredSignatureError:
-        raise AuthenticationException(
-            message="Invalid or expired authentication token"
-        )
+        raise AuthenticationException(message="Invalid or expired authentication token")
 
     except InvalidTokenError:
-        raise AuthenticationException(
-            message="Invalid or expired authentication token"
-        )
+        raise AuthenticationException(message="Invalid or expired authentication token")

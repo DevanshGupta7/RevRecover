@@ -49,19 +49,13 @@ class Organisation(Base):
         unique=True,
         index=True,
     )
-    
+
     razorpay_account_id: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True,
-        unique=True,
-        index=True
+        String(100), nullable=True, unique=True, index=True
     )
 
     status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="active",
-        index=True
+        String(50), nullable=False, default="active", index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -71,8 +65,5 @@ class Organisation(Base):
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )

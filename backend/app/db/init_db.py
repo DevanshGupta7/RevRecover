@@ -17,6 +17,7 @@ from app.core.logging_config import setup_logging
 from app.db.base import Base
 from app.db.database import engine
 from app.models import (  # noqa: F401
+    AIDecision,
     Customer,
     IdempotencyKey,
     Organisation,
@@ -35,6 +36,7 @@ setup_logging()
 
 logger = logging.getLogger(__name__)
 
+
 def init_db():
     """
     Initialize the RevRecover database schema.
@@ -48,7 +50,7 @@ def init_db():
     Raises:
         DatabaseException: If the database schema cannot be created.
     """
-    
+
     logger.info("Starting database initialization")
 
     try:
@@ -58,10 +60,9 @@ def init_db():
 
     except Exception as e:
         logger.exception("Database initialization failed")
-        
-        raise DatabaseException(
-            "Failed to initialize RevRecover database."
-        ) from e
+
+        raise DatabaseException("Failed to initialize RevRecover database.") from e
+
 
 if __name__ == "__main__":
     init_db()

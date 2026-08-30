@@ -16,13 +16,11 @@ engine = create_engine(
     settings.DATABASE_URL,
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )
 
-SessionLocal = sessionmaker(
-    bind=engine,
-    autoflush=False
-)
+SessionLocal = sessionmaker(bind=engine, autoflush=False)
+
 
 def get_db() -> Generator[Session, None, None]:
     """
@@ -40,9 +38,9 @@ def get_db() -> Generator[Session, None, None]:
         This generator is intended to be used with FastAPI's
         dependency injection system.
     """
-    
+
     db = SessionLocal()
-    
+
     try:
         yield db
     finally:

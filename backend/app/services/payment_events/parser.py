@@ -31,22 +31,16 @@ class ParsedPaymentEvent:
     failure_code: str | None
 
     provider_created_at: datetime | None
-    
+
     customer_name: str | None
     customer_email: str | None
     customer_phone: str | None
 
 
-SUPPORTED_PAYMENT_EVENTS = {
-    "payment.authorized",
-    "payment.captured",
-    "payment.failed"
-}
+SUPPORTED_PAYMENT_EVENTS = {"payment.authorized", "payment.captured", "payment.failed"}
 
 
-def parse_provider_timestamp(
-    timestamp: Any
-) -> datetime | None:
+def parse_provider_timestamp(timestamp: Any) -> datetime | None:
     """
     Convert a Unix timestamp to an aware UTC datetime.
     """
@@ -57,17 +51,10 @@ def parse_provider_timestamp(
     if not isinstance(timestamp, (int, float)):
         return None
 
-    return datetime.fromtimestamp(
-        timestamp,
-        tz=timezone.utc
-    )
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc)
 
 
-def parse_payment_event(
-    *,
-    payload: dict,
-    provider_event_id: str
-) -> ParsedPaymentEvent:
+def parse_payment_event(*, payload: dict, provider_event_id: str) -> ParsedPaymentEvent:
     """
     Parse a Razorpay payment webhook.
 
@@ -79,36 +66,24 @@ def parse_payment_event(
     event_type = payload.get("event")
 
     if not isinstance(event_type, str):
-        raise TypeError(
-            "Webhook event type is missing."
-        )
+        raise TypeError("Webhook event type is missing.")
 
     if event_type not in SUPPORTED_PAYMENT_EVENTS:
-        raise ValueError(
-            f"Unsupported payment event: {event_type}"
-        )
+        raise ValueError(f"Unsupported payment event: {event_type}")
 
     account_id = payload.get("account_id")
 
-    payment_wrapper = (
-        payload
-        .get("payload", {})
-        .get("payment", {})
-    )
+    payment_wrapper = payload.get("payload", {}).get("payment", {})
 
     payment = payment_wrapper.get("entity", {})
 
     if not isinstance(payment, dict):
-        raise TypeError(
-            "Payment entity is missing from webhook payload."
-        )
+        raise TypeError("Payment entity is missing from webhook payload.")
 
     payment_id = payment.get("id")
 
     if not payment_id:
-        raise ValueError(
-            "Razorpay payment ID is missing."
-        )
+        raise ValueError("Razorpay payment ID is missing.")
 
     error = payment.get("error")
 
@@ -129,7 +104,5 @@ def parse_payment_event(
         payment_status=payment.get("status"),
         failure_reason=error.get("description"),
         failure_code=error.get("code"),
-        provider_created_at=parse_provider_timestamp(
-            payload.get("created_at")
-        )
+        provider_created_at=parse_provider_timestamp(payload.get("created_at")),
     )

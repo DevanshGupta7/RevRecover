@@ -13,15 +13,10 @@ from app.models.organisation_member import OrganisationRole
 
 oauth2_scheme = HTTPBearer()
 
+
 def get_current_user(
-    credentials: Annotated[
-        HTTPAuthorizationCredentials,
-        Depends(oauth2_scheme)
-    ],
-    db: Annotated[
-        Session,
-        Depends(get_db)
-    ]
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """
     Extract and validate the authenticated user
@@ -40,7 +35,7 @@ def get_current_user(
         tuple:
             The authenticated user and their organisation membership.
     """
-    
+
     token = credentials.credentials
 
     try:
@@ -60,10 +55,7 @@ def get_current_user(
             message="Could not validate authentication credentials."
         )
 
-    user = get_user_by_id(
-        db,
-        user_uuid
-    )
+    user = get_user_by_id(db, user_uuid)
 
     if not user:
         raise AuthenticationException(
@@ -71,21 +63,15 @@ def get_current_user(
         )
 
     if not user.is_active:
-        raise AuthorizationException(
-            message="User account is inactive."
-        )
+        raise AuthorizationException(message="User account is inactive.")
 
-    membership = get_membership(
-        db,
-        user.id
-    )
+    membership = get_membership(db, user.id)
 
     if not membership:
-        raise AuthorizationException(
-            message="Organisation membership not found."
-        )
+        raise AuthorizationException(message="Organisation membership not found.")
 
     return user, membership
+
 
 def require_roles(*allowed_roles: OrganisationRole):
     """
@@ -105,12 +91,7 @@ def require_roles(*allowed_roles: OrganisationRole):
             If the authenticated user's role is not allowed.
     """
 
-    def role_dependency(
-        current_user: Annotated[
-            tuple,
-            Depends(get_current_user)
-        ]
-    ):
+    def role_dependency(current_user: Annotated[tuple, Depends(get_current_user)]):
         _, membership = current_user
 
         if membership.role not in allowed_roles:

@@ -11,10 +11,7 @@ class PaymentProvider(ABC):
     """
 
     @abstractmethod
-    def fetch_payment(
-        self,
-        provider_payment_id: str
-    ) -> dict[str, Any]:
+    def fetch_payment(self, provider_payment_id: str) -> dict[str, Any]:
         """Fetch a provider payment."""
 
     @abstractmethod
@@ -27,15 +24,12 @@ class PaymentProvider(ABC):
         description: str,
         customer_name: str | None = None,
         customer_email: str | None = None,
-        customer_contact: str | None = None
+        customer_contact: str | None = None,
     ) -> dict[str, Any]:
         """Create a payment link."""
 
     @abstractmethod
     def verify_payment_signature(
-        self,
-        order_id: str,
-        payment_id: str,
-        signature: str
+        self, order_id: str, payment_id: str, signature: str
     ) -> None:
         """Verify a Checkout payment signature."""

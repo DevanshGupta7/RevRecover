@@ -25,6 +25,7 @@ def utc_now() -> datetime:
     """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
+
 class RecoveryPolicy(Base):
     """
     Define the rules and safety boundaries for recovery workflows.
@@ -49,72 +50,45 @@ class RecoveryPolicy(Base):
         created_at: Timestamp when the policy was created.
         updated_at: Timestamp when the policy was last updated.
     """
-    
+
     __tablename__ = "recovery_policies"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organisations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    name: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False
-    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    max_attempts: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=3
-    )
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
 
     min_hours_between_attempts: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=24
+        Integer, nullable=False, default=24
     )
 
     max_recovery_amount: Mapped[Decimal | None] = mapped_column(
-        Numeric(15, 2),
-        nullable=True
+        Numeric(15, 2), nullable=True
     )
 
-    allowed_channels: Mapped[list] = mapped_column(
-        JSONB,
-        nullable=False,
-        default=list
-    )
+    allowed_channels: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
-    allow_discount: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False
-    )
+    allow_discount: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     require_approval_above: Mapped[Decimal | None] = mapped_column(
-        Numeric(15, 2),
-        nullable=True
+        Numeric(15, 2), nullable=True
     )
 
     stop_after_success: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True
+        Boolean, nullable=False, default=True
     )
 
-    is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -123,11 +97,9 @@ class RecoveryPolicy(Base):
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
+
 
 class RecoveryCase(Base):
     """
@@ -162,123 +134,87 @@ class RecoveryCase(Base):
         created_at: Timestamp when the case was created.
         updated_at: Timestamp when the case was last updated.
     """
-    
+
     __tablename__ = "recovery_cases"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organisations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("customers.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     payment_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("payments.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     policy_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("recovery_policies.id", ondelete="SET NULL"),
         nullable=True,
-        index=True
+        index=True,
     )
 
-    risk_amount: Mapped[Decimal] = mapped_column(
-        Numeric(15, 2),
-        nullable=False
-    )
+    risk_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
 
-    risk_type: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False
-    )
+    risk_type: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    failure_reason: Mapped[str | None] = mapped_column(
-        String(500),
-        nullable=True
-    )
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
-    failure_code: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True
-    )
+    failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    risk_score: Mapped[Decimal | None] = mapped_column(
-        Numeric(5, 2),
-        nullable=True
-    )
+    risk_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
 
     recovery_probability: Mapped[Decimal | None] = mapped_column(
-        Numeric(5, 2),
-        nullable=True
+        Numeric(5, 2), nullable=True
     )
 
     status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="detected",
-        index=True
+        String(50), nullable=False, default="detected", index=True
     )
 
-    current_step: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True
-    )
+    current_step: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    max_attempts: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=3
-    )
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
 
     started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     stopped_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     recovered_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     recovered_amount: Mapped[Decimal | None] = mapped_column(
-        Numeric(15, 2),
-        nullable=True
+        Numeric(15, 2), nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
+
 
 class RecoveryAction(Base):
     """
@@ -298,54 +234,40 @@ class RecoveryAction(Base):
         executed_at: Timestamp when the action was executed.
         created_at: Timestamp when the action record was created.
     """
-    
+
     __tablename__ = "recovery_actions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     recovery_case_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("recovery_cases.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    action_type: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False
-    )
+    action_type: Mapped[str] = mapped_column(String(100), nullable=False)
 
     status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="planned",
-        index=True
+        String(50), nullable=False, default="planned", index=True
     )
 
-    step_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False
-    )
+    step_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     planned_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     executed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
+
 
 class RecoveryAttempt(Base):
     """
@@ -366,58 +288,41 @@ class RecoveryAttempt(Base):
         attempted_at: Timestamp when the attempt was executed.
         created_at: Timestamp when the attempt record was created.
     """
-    
+
     __tablename__ = "recovery_attempts"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     recovery_case_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("recovery_cases.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     recovery_action_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("recovery_actions.id", ondelete="SET NULL"),
         nullable=True,
-        index=True
+        index=True,
     )
 
-    attempt_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False
-    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    channel: Mapped[str | None] = mapped_column(
-        String(50),
-        nullable=True
-    )
+    channel: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="pending",
-        index=True
+        String(50), nullable=False, default="pending", index=True
     )
 
-    error_message: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True
-    )
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     attempted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )

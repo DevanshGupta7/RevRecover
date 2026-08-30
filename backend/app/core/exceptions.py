@@ -9,6 +9,7 @@ consistent API responses.
 All custom exceptions should inherit from RevRecoverException.
 """
 
+
 class RevRecoverException(Exception):
     """
     Base exception for all custom RevRecover application errors.
@@ -25,10 +26,7 @@ class RevRecoverException(Exception):
     """
 
     def __init__(
-        self,
-        message: str,
-        status_code: int = 500,
-        error_code: str = "INTERNAL_ERROR"
+        self, message: str, status_code: int = 500, error_code: str = "INTERNAL_ERROR"
     ):
         """
         Initialize a RevRecover application exception.
@@ -40,72 +38,51 @@ class RevRecoverException(Exception):
             error_code: Stable machine-readable error identifier
                 used in API responses.
         """
-        
+
         self.message = message
         self.status_code = status_code
         self.error_code = error_code
 
         super().__init__(message)
 
+
 class ValidationException(RevRecoverException):
     """
     Raised when request or business data fails validation.
     """
 
-    def __init__(
-        self,
-        message: str = "Validation failed"
-    ):
+    def __init__(self, message: str = "Validation failed"):
         super().__init__(
-            message=message,
-            status_code=400,
-            error_code="VALIDATION_ERROR"
+            message=message, status_code=400, error_code="VALIDATION_ERROR"
         )
+
 
 class AuthenticationException(RevRecoverException):
     """
     Raised when authentication fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Authentication failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=401,
-            error_code="AUTH_ERROR"
-        )
+    def __init__(self, message: str = "Authentication failed"):
+        super().__init__(message=message, status_code=401, error_code="AUTH_ERROR")
+
 
 class AuthorizationException(RevRecoverException):
     """
     Raised when an authenticated user does not have permission.
     """
 
-    def __init__(
-        self,
-        message: str = "Permission denied"
-    ):
-        super().__init__(
-            message=message,
-            status_code=403,
-            error_code="FORBIDDEN"
-        )
+    def __init__(self, message: str = "Permission denied"):
+        super().__init__(message=message, status_code=403, error_code="FORBIDDEN")
+
 
 class ResourceNotFoundException(RevRecoverException):
     """
     Raised when a requested resource does not exist.
     """
 
-    def __init__(
-        self,
-        message: str = "Resource not found"
-    ):
-        super().__init__(
-            message=message,
-            status_code=404,
-            error_code="NOT_FOUND"
-        )
+    def __init__(self, message: str = "Resource not found"):
+        super().__init__(message=message, status_code=404, error_code="NOT_FOUND")
+
 
 class ConflictException(RevRecoverException):
     """
@@ -113,45 +90,27 @@ class ConflictException(RevRecoverException):
     of a resource.
     """
 
-    def __init__(
-        self,
-        message: str = "Resource conflict"
-    ):
-        super().__init__(
-            message=message,
-            status_code=409,
-            error_code="CONFLICT"
-        )
+    def __init__(self, message: str = "Resource conflict"):
+        super().__init__(message=message, status_code=409, error_code="CONFLICT")
+
 
 class DatabaseException(RevRecoverException):
     """
     Raised when a database operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Database error"
-    ):
-        super().__init__(
-            message=message,
-            status_code=500,
-            error_code="DATABASE_ERROR"
-        )
+    def __init__(self, message: str = "Database error"):
+        super().__init__(message=message, status_code=500, error_code="DATABASE_ERROR")
+
 
 class PaymentException(RevRecoverException):
     """
     Raised when a payment operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Payment operation failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=500,
-            error_code="PAYMENT_ERROR"
-        )
+    def __init__(self, message: str = "Payment operation failed"):
+        super().__init__(message=message, status_code=500, error_code="PAYMENT_ERROR")
+
 
 class PaymentProviderException(RevRecoverException):
     """
@@ -159,60 +118,40 @@ class PaymentProviderException(RevRecoverException):
     returns an error or cannot be reached.
     """
 
-    def __init__(
-        self,
-        message: str = "Payment provider error"
-    ):
+    def __init__(self, message: str = "Payment provider error"):
         super().__init__(
-            message=message,
-            status_code=502,
-            error_code="PAYMENT_PROVIDER_ERROR"
+            message=message, status_code=502, error_code="PAYMENT_PROVIDER_ERROR"
         )
+
 
 class WebhookException(RevRecoverException):
     """
     Raised when a webhook cannot be processed.
     """
 
-    def __init__(
-        self,
-        message: str = "Webhook processing failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=400,
-            error_code="WEBHOOK_ERROR"
-        )
+    def __init__(self, message: str = "Webhook processing failed"):
+        super().__init__(message=message, status_code=400, error_code="WEBHOOK_ERROR")
+
 
 class IdempotencyException(RevRecoverException):
     """
     Raised when an idempotency conflict occurs.
     """
 
-    def __init__(
-        self,
-        message: str = "Duplicate request"
-    ):
+    def __init__(self, message: str = "Duplicate request"):
         super().__init__(
-            message=message,
-            status_code=409,
-            error_code="IDEMPOTENCY_ERROR"
+            message=message, status_code=409, error_code="IDEMPOTENCY_ERROR"
         )
+
 
 class RecoveryException(RevRecoverException):
     """
     Raised when a recovery workflow operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Recovery operation failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=500,
-            error_code="RECOVERY_ERROR"
-        )
+    def __init__(self, message: str = "Recovery operation failed"):
+        super().__init__(message=message, status_code=500, error_code="RECOVERY_ERROR")
+
 
 class PolicyViolationException(RevRecoverException):
     """
@@ -220,71 +159,45 @@ class PolicyViolationException(RevRecoverException):
     the configured recovery policy.
     """
 
-    def __init__(
-        self,
-        message: str = "Recovery policy violation"
-    ):
+    def __init__(self, message: str = "Recovery policy violation"):
         super().__init__(
-            message=message,
-            status_code=403,
-            error_code="POLICY_VIOLATION"
+            message=message, status_code=403, error_code="POLICY_VIOLATION"
         )
+
 
 class AIException(RevRecoverException):
     """
     Raised when an AI operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "AI operation failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=500,
-            error_code="AI_ERROR"
-        )
+    def __init__(self, message: str = "AI operation failed"):
+        super().__init__(message=message, status_code=500, error_code="AI_ERROR")
+
 
 class CommunicationException(RevRecoverException):
     """
     Raised when a communication operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Communication operation failed"
-    ):
+    def __init__(self, message: str = "Communication operation failed"):
         super().__init__(
-            message=message,
-            status_code=500,
-            error_code="COMMUNICATION_ERROR"
+            message=message, status_code=500, error_code="COMMUNICATION_ERROR"
         )
+
 
 class SecurityException(RevRecoverException):
     """
     Raised when a security-related operation fails.
     """
 
-    def __init__(
-        self,
-        message: str = "Security operation failed"
-    ):
-        super().__init__(
-            message=message,
-            status_code=500,
-            error_code="SECURITY_ERROR"
-        )
+    def __init__(self, message: str = "Security operation failed"):
+        super().__init__(message=message, status_code=500, error_code="SECURITY_ERROR")
+
 
 class NotFoundException(RevRecoverException):
     """
     Raised when a requested resource does not exist.
     """
 
-    def __init__(
-        self,
-        message: str = "Resource not found."
-    ):
-        super().__init__(
-            message=message,
-            status_code=404
-        )
+    def __init__(self, message: str = "Resource not found."):
+        super().__init__(message=message, status_code=404)
