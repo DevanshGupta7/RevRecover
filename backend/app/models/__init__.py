@@ -1,3 +1,4 @@
+from app.models.ai_decision import AIDecision
 from app.models.customer import Customer
 from app.models.organisation import Organisation
 from app.models.organisation_member import OrganisationMember
@@ -6,14 +7,14 @@ from app.models.recovery import (
     RecoveryAction,
     RecoveryAttempt,
     RecoveryCase,
-    RecoveryPolicy
+    RecoveryPolicy,
 )
 from app.models.system import IdempotencyKey
 from app.models.user import User
 from app.models.webhook_event import WebhookEvent
-from app.models.ai_decision import AIDecision
 
 __all__ = [
+    "AIDecision",
     "Customer",
     "IdempotencyKey",
     "Organisation",
@@ -26,5 +27,4 @@ __all__ = [
     "RecoveryPolicy",
     "User",
     "WebhookEvent",
-    "AIDecision"
 ]

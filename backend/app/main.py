@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from app.api.auth.router import router as auth_router
 from app.api.organisations.router import router as organisations_router
 from app.api.payments.router import router as payments_router
+from app.api.recovery.router import router as recovery_router
 from app.api.webhooks.razorpay import router as razorpay_webhook_router
 from app.core.exceptions import RevRecoverException
 from app.core.handlers import revrecover_exception_handler
@@ -29,26 +30,18 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="RevRecover")
 
-app.add_exception_handler(
-    RevRecoverException,
-    revrecover_exception_handler
-)
+app.add_exception_handler(RevRecoverException, revrecover_exception_handler)
 
-app.include_router(
-    auth_router
-)
+app.include_router(auth_router)
 
-app.include_router(
-    organisations_router
-)
+app.include_router(organisations_router)
 
-app.include_router(
-    payments_router
-)
+app.include_router(payments_router)
 
-app.include_router(
-    razorpay_webhook_router
-)
+app.include_router(recovery_router)
+
+app.include_router(razorpay_webhook_router)
+
 
 @app.get("/health")
 def health_check():
@@ -69,11 +62,11 @@ def health_check():
             current service health status, service name, and a
             human-readable status message.
     """
-    
+
     logger.info("Health check requested")
 
     return {
         "status": "healthy",
         "service": "RevRecover API",
-        "message": "RevRecover backend is running successfully."
+        "message": "RevRecover backend is running successfully.",
     }

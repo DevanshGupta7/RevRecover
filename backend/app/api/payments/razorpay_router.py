@@ -11,10 +11,7 @@ from app.integrations.razorpay.exceptions import (
 )
 from app.services.payment_provider_factory import get_payment_provider
 
-router = APIRouter(
-    prefix="/payments/razorpay",
-    tags=["Razorpay"]
-)
+router = APIRouter(prefix="/payments/razorpay", tags=["Razorpay"])
 
 
 # class RazorpayPaymentResponse(BaseModel):
@@ -25,20 +22,15 @@ class RazorpayVerificationRequest(BaseModel):
     razorpay_order_id: str
     razorpay_payment_id: str
     razorpay_signature: str
-    
+
 
 # class PaymentLinkCreateRequest(BaseModel):
 #     description: str = "RevRecover payment recovery"
 
-@router.get(
-    "/{provider_payment_id}"
-)
+
+@router.get("/{provider_payment_id}")
 def fetch_razorpay_payment(
-    provider_payment_id: str,
-    current_user: Annotated[
-        tuple,
-        Depends(get_current_user)
-    ]
+    provider_payment_id: str, current_user: Annotated[tuple, Depends(get_current_user)]
 ):
     """
     Fetch payment information directly from Razorpay.
@@ -50,28 +42,18 @@ def fetch_razorpay_payment(
     provider = get_payment_provider()
 
     try:
-        payment = provider.fetch_payment(
-            provider_payment_id
-        )
+        payment = provider.fetch_payment(provider_payment_id)
 
-        return {
-            "payment": payment
-        }
+        return {"payment": payment}
 
     except RazorpayAPIException as exc:
-        raise PaymentProviderException(
-            message=str(exc)
-        ) from exc
+        raise PaymentProviderException(message=str(exc)) from exc
 
-@router.post(
-    "/verify"
-)
+
+@router.post("/verify")
 def verify_razorpay_payment(
     request: RazorpayVerificationRequest,
-    current_user: Annotated[
-        tuple,
-        Depends(get_current_user)
-    ]
+    current_user: Annotated[tuple, Depends(get_current_user)],
 ):
     """
     Verify the signature returned by Razorpay Checkout.
@@ -83,7 +65,7 @@ def verify_razorpay_payment(
         provider.verify_payment_signature(
             order_id=request.razorpay_order_id,
             payment_id=request.razorpay_payment_id,
-            signature=request.razorpay_signature
+            signature=request.razorpay_signature,
         )
 
     except RazorpaySignatureException as exc:
@@ -93,13 +75,10 @@ def verify_razorpay_payment(
 
     return {
         "verified": True,
-        "razorpay_payment_id": (
-            request.razorpay_payment_id
-        ),
-        "razorpay_order_id": (
-            request.razorpay_order_id
-        )
+        "razorpay_payment_id": (request.razorpay_payment_id),
+        "razorpay_order_id": (request.razorpay_order_id),
     }
+
 
 # def create_payment_link(
 #     payment_id: UUID,

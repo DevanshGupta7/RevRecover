@@ -1,6 +1,9 @@
 Tests to perform before every commit:-
 python -m compileall app
 ruff check .
+ruff check --fix
+ruff format --check .
+ruff format .
 python -m pytest
 python -m pytest tests\unit -v
 

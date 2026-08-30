@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from pydantic import BaseModel
 
 
@@ -26,10 +27,7 @@ class AIProvider(ABC):
     """
 
     @abstractmethod
-    def analyze_recovery(
-        self,
-        context: dict
-    ) -> RecoveryAIDecision:
+    def analyze_recovery(self, context: dict) -> RecoveryAIDecision:
         """
         Analyze a recovery case and return a structured decision.
         """

@@ -3,12 +3,12 @@ PAYMENT_STATUS_PRIORITY = {
     "failed": 20,
     "authorized": 30,
     "captured": 40,
-    "refunded": 50
+    "refunded": 50,
 }
 
+
 def should_update_payment_status(
-    current_status: str | None,
-    incoming_status: str | None
+    current_status: str | None, incoming_status: str | None
 ) -> bool:
     """
     Determine whether an incoming provider status should replace
@@ -21,14 +21,8 @@ def should_update_payment_status(
     if not current_status:
         return True
 
-    current_priority = PAYMENT_STATUS_PRIORITY.get(
-        current_status,
-        0
-    )
+    current_priority = PAYMENT_STATUS_PRIORITY.get(current_status, 0)
 
-    incoming_priority = PAYMENT_STATUS_PRIORITY.get(
-        incoming_status,
-        0
-    )
+    incoming_priority = PAYMENT_STATUS_PRIORITY.get(incoming_status, 0)
 
     return incoming_priority >= current_priority

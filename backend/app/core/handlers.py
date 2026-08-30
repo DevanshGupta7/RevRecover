@@ -14,9 +14,9 @@ from app.core.exceptions import RevRecoverException
 
 logger = logging.getLogger(__name__)
 
+
 async def revrecover_exception_handler(
-    request: Request,
-    exc: RevRecoverException
+    request: Request, exc: RevRecoverException
 ) -> JSONResponse:
     """
     Handle a custom RevRecover application exception.
@@ -44,21 +44,17 @@ async def revrecover_exception_handler(
     """
 
     logger.warning(
-        "Application error | method=%s path=%s "
-        "code=%s message=%s",
+        "Application error | method=%s path=%s code=%s message=%s",
         request.method,
         request.url.path,
         exc.error_code,
-        exc.message
+        exc.message,
     )
 
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "success": False,
-            "error": {
-                "code": exc.error_code,
-                "message": exc.message
-            }
-        }
+            "error": {"code": exc.error_code, "message": exc.message},
+        },
     )

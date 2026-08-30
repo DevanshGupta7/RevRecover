@@ -13,24 +13,16 @@ class RazorpayService(PaymentProvider):
     Service responsible for communication with Razorpay.
     """
 
-    def __init__(
-        self,
-        client: RazorpayClient
-    ) -> None:
+    def __init__(self, client: RazorpayClient) -> None:
         self.client = client
 
-    def fetch_payment(
-        self,
-        provider_payment_id: str
-    ) -> dict[str, Any]:
+    def fetch_payment(self, provider_payment_id: str) -> dict[str, Any]:
         """
         Fetch a payment from Razorpay.
         """
 
         try:
-            return self.client.client.payment.fetch(
-                provider_payment_id
-            )
+            return self.client.client.payment.fetch(provider_payment_id)
 
         except Exception as exc:
             raise RazorpayAPIException(
@@ -38,10 +30,7 @@ class RazorpayService(PaymentProvider):
             ) from exc
 
     def verify_payment_signature(
-        self,
-        order_id: str,
-        payment_id: str,
-        signature: str
+        self, order_id: str, payment_id: str, signature: str
     ) -> None:
         """
         Verify the signature returned by Razorpay Checkout.
@@ -52,7 +41,7 @@ class RazorpayService(PaymentProvider):
                 {
                     "razorpay_order_id": order_id,
                     "razorpay_payment_id": payment_id,
-                    "razorpay_signature": signature
+                    "razorpay_signature": signature,
                 }
             )
 
@@ -70,7 +59,7 @@ class RazorpayService(PaymentProvider):
         description: str,
         customer_name: str | None = None,
         customer_email: str | None = None,
-        customer_contact: str | None = None
+        customer_contact: str | None = None,
     ) -> dict[str, Any]:
         """
         Create a Razorpay Payment Link.
@@ -84,10 +73,7 @@ class RazorpayService(PaymentProvider):
             "accept_partial": False,
             "reference_id": reference_id,
             "description": description,
-            "notify": {
-                "sms": False,
-                "email": False
-            }
+            "notify": {"sms": False, "email": False},
         }
 
         customer = {}
@@ -105,9 +91,7 @@ class RazorpayService(PaymentProvider):
             payload["customer"] = customer
 
         try:
-            return self.client.client.payment_link.create(
-                data=payload
-            )
+            return self.client.client.payment_link.create(data=payload)
 
         except Exception as exc:
             raise RazorpayAPIException(

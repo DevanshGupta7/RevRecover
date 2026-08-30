@@ -17,19 +17,14 @@ class OrganisationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class OrganisationUpdateRequest(BaseModel):
     """Fields that can be updated by an authorised user."""
 
-    name: str | None = Field(
-        default=None,
-        min_length=2,
-        max_length=255
-    )
-    
-    razorpay_account_id: str | None = Field(
-        default=None,
-        max_length=100
-    )
+    name: str | None = Field(default=None, min_length=2, max_length=255)
+
+    razorpay_account_id: str | None = Field(default=None, max_length=100)
+
 
 class OrganisationMemberResponse(BaseModel):
     """Organisation membership information."""

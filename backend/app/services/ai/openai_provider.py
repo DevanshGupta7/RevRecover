@@ -2,10 +2,7 @@ import logging
 
 from openai import OpenAI
 
-from app.services.ai.provider import (
-    AIProvider,
-    RecoveryAIDecision
-)
+from app.services.ai.provider import AIProvider, RecoveryAIDecision
 
 logger = logging.getLogger(__name__)
 
@@ -49,42 +46,27 @@ class OpenAIRecoveryProvider(AIProvider):
     OpenAI implementation of the recovery AI provider.
     """
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str
-    ):
+    def __init__(self, api_key: str, model: str):
         self.client = OpenAI(api_key=api_key)
         self.model = model
 
-    def analyze_recovery(
-        self,
-        context: dict
-    ) -> RecoveryAIDecision:
+    def analyze_recovery(self, context: dict) -> RecoveryAIDecision:
 
         response = self.client.responses.parse(
             model=self.model,
             input=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                },
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": (
-                        "Analyze this recovery case:\n\n"
-                        f"{context}"
-                    )
-                }
+                    "content": (f"Analyze this recovery case:\n\n{context}"),
+                },
             ],
-            text_format=RecoveryAIDecision
+            text_format=RecoveryAIDecision,
         )
 
         parsed = response.output_parsed
 
         if parsed is None:
-            raise RuntimeError(
-                "AI provider returned no structured decision."
-            )
+            raise RuntimeError("AI provider returned no structured decision.")
 
         return parsed

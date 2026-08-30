@@ -20,6 +20,7 @@ class PaymentAttemptResponse(BaseModel):
     attempted_at: datetime
     created_at: datetime
 
+
 class PaymentResponse(BaseModel):
     """Public payment representation."""
 
@@ -38,10 +39,12 @@ class PaymentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class PaymentDetailResponse(PaymentResponse):
     """Detailed payment representation."""
 
     attempt_count: int = 0
+
 
 class CustomerResponse(BaseModel):
     """Public customer representation."""
@@ -58,28 +61,18 @@ class CustomerResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class CustomerCreateRequest(BaseModel):
     """Create a customer."""
 
-    external_customer_id: str | None = Field(
-        default=None,
-        max_length=255
-    )
+    external_customer_id: str | None = Field(default=None, max_length=255)
 
-    name: str | None = Field(
-        default=None,
-        max_length=255
-    )
+    name: str | None = Field(default=None, max_length=255)
 
-    email: str | None = Field(
-        default=None,
-        max_length=320
-    )
+    email: str | None = Field(default=None, max_length=320)
 
-    phone: str | None = Field(
-        default=None,
-        max_length=50
-    )
+    phone: str | None = Field(default=None, max_length=50)
+
 
 class CustomerPaymentSummary(BaseModel):
     """Customer payment summary."""
@@ -90,6 +83,7 @@ class CustomerPaymentSummary(BaseModel):
     total_paid: Decimal
     total_failed_amount: Decimal
 
+
 class PaginationMeta(BaseModel):
     """Pagination information."""
 
@@ -98,11 +92,13 @@ class PaginationMeta(BaseModel):
     total: int
     total_pages: int
 
+
 class PaymentListResponse(BaseModel):
     """Paginated payment response."""
 
     items: list[PaymentResponse]
     pagination: PaginationMeta
+
 
 class CustomerListResponse(BaseModel):
     """Paginated customer response."""

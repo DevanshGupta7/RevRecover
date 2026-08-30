@@ -33,12 +33,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10
-    
+
     JWT_SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     JWT_ALGORITHM: str = "HS256"
-    
+
     RAZORPAY_KEY_ID: str
     RAZORPAY_KEY_SECRET: str
     RAZORPAY_WEBHOOK_SECRET: str
@@ -54,6 +54,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+
 @lru_cache
 def get_settings() -> Settings:
     """
@@ -68,5 +69,6 @@ def get_settings() -> Settings:
     """
 
     return Settings()
+
 
 settings = get_settings()

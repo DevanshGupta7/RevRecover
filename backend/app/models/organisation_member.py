@@ -20,6 +20,7 @@ def utc_now() -> datetime:
     """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
+
 class OrganisationRole(str, enum.Enum):
     """
     Roles available to users inside an organisation.
@@ -29,6 +30,7 @@ class OrganisationRole(str, enum.Enum):
     FINANCE_MANAGER = "finance_manager"
     RECOVERY_AGENT = "recovery_agent"
     VIEWER = "viewer"
+
 
 class OrganisationMember(Base):
     """
@@ -41,35 +43,29 @@ class OrganisationMember(Base):
     __tablename__ = "organisation_members"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organisations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     role: Mapped[OrganisationRole] = mapped_column(
-        Enum(OrganisationRole),
-        nullable=False,
-        default=OrganisationRole.ADMIN
+        Enum(OrganisationRole), nullable=False, default=OrganisationRole.ADMIN
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     __table_args__ = (

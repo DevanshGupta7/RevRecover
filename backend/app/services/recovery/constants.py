@@ -4,7 +4,7 @@ ALLOWED_AI_ACTIONS = {
     "REQUEST_PAYMENT_METHOD_UPDATE",
     "WAIT",
     "ESCALATE",
-    "STOP"
+    "STOP",
 }
 
 
@@ -18,7 +18,7 @@ RECOVERY_STATUSES = {
     "recovered",
     "failed",
     "escalated",
-    "stopped"
+    "stopped",
 }
 
 
@@ -27,12 +27,8 @@ RETRYABLE_FAILURE_CODES = {
     "TEMPORARY_ERROR",
     "BANK_ERROR",
     "NETWORK_ERROR",
-    "GATEWAY_ERROR"
+    "GATEWAY_ERROR",
 }
 
 
-NON_RETRYABLE_FAILURE_CODES = {
-    "INVALID_CARD",
-    "EXPIRED_CARD",
-    "CARD_NOT_SUPPORTED"
-}
+NON_RETRYABLE_FAILURE_CODES = {"INVALID_CARD", "EXPIRED_CARD", "CARD_NOT_SUPPORTED"}

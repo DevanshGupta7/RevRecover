@@ -13,14 +13,10 @@ class RazorpayClient:
 
     def __init__(self) -> None:
         if not settings.RAZORPAY_ENABLED:
-            raise RazorpayConfigurationException(
-                "Razorpay integration is disabled."
-            )
+            raise RazorpayConfigurationException("Razorpay integration is disabled.")
 
         if not settings.RAZORPAY_KEY_ID:
-            raise RazorpayConfigurationException(
-                "RAZORPAY_KEY_ID is not configured."
-            )
+            raise RazorpayConfigurationException("RAZORPAY_KEY_ID is not configured.")
 
         if not settings.RAZORPAY_KEY_SECRET:
             raise RazorpayConfigurationException(
@@ -28,10 +24,7 @@ class RazorpayClient:
             )
 
         self.client = razorpay.Client(
-            auth=(
-                settings.RAZORPAY_KEY_ID,
-                settings.RAZORPAY_KEY_SECRET
-            )
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
 
         self.client.enable_retry(True)

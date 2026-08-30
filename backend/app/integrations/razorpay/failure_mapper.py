@@ -1,6 +1,4 @@
-def extract_failure_information(
-    payment: dict
-) -> tuple[str | None, str | None]:
+def extract_failure_information(payment: dict) -> tuple[str | None, str | None]:
     """
     Extract failure reason and code from a Razorpay payment.
     """

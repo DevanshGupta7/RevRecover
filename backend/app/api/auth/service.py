@@ -22,15 +22,13 @@ from app.core.security.jwt import (
 )
 from app.core.security.password import hash_password, verify_password
 from app.models.organisation_member import OrganisationRole
+from app.models.recovery import RecoveryPolicy
 
 logger = logging.getLogger(__name__)
 
+
 def register_user(
-    db: Session,
-    email: str,
-    password: str,
-    full_name: str,
-    organisation_name: str
+    db: Session, email: str, password: str, full_name: str, organisation_name: str
 ):
     """
     Register a new RevRecover user.
@@ -54,56 +52,56 @@ def register_user(
             The created user, organisation, and membership.
     """
 
-    existing_user = get_user_by_email(
-        db,
-        email
-    )
+    existing_user = get_user_by_email(db, email)
 
     if existing_user:
-        logger.warning(
-            "Registration attempt with existing email"
-        )
+        logger.warning("Registration attempt with existing email")
 
-        raise ConflictException(
-            message="An account with this email already exists."
-        )
+        raise ConflictException(message="An account with this email already exists.")
 
     password_hash = hash_password(password)
 
     user = create_user(
-        db=db,
-        email=email,
-        full_name=full_name,
-        password_hash=password_hash
+        db=db, email=email, full_name=full_name, password_hash=password_hash
     )
 
-    organisation = create_organisation(
-        db=db,
-        name=organisation_name
-    )
+    organisation = create_organisation(db=db, name=organisation_name)
 
     membership = create_membership(
         db=db,
         user_id=user.id,
         organisation_id=organisation.id,
-        role=OrganisationRole.ADMIN
+        role=OrganisationRole.ADMIN,
     )
+
+    policy = RecoveryPolicy(
+        organisation_id=organisation.id,
+        name="Default Recovery Policy",
+        max_attempts=3,
+        min_hours_between_attempts=24,
+        max_recovery_amount=100000,
+        allowed_channels=["email"],
+        allow_discount=False,
+        require_approval_above=10000,
+        stop_after_success=True,
+        is_active=True,
+    )
+
+    db.add(policy)
+    db.flush()
 
     db.commit()
 
     logger.info(
         "User registered successfully | user_id=%s organisation_id=%s",
         user.id,
-        organisation.id
+        organisation.id,
     )
 
     return user, organisation, membership
 
-def authenticate_user(
-    db: Session,
-    email: str,
-    password: str
-):
+
+def authenticate_user(db: Session, email: str, password: str):
     """
     Authenticate a user using email and password.
 
@@ -119,41 +117,24 @@ def authenticate_user(
             Access token and refresh token.
     """
 
-    user = get_user_by_email(
-        db,
-        email
-    )
+    user = get_user_by_email(db, email)
 
     if not user:
-        logger.warning(
-            "Authentication failed: invalid credentials"
-        )
+        logger.warning("Authentication failed: invalid credentials")
 
-        raise AuthenticationException(
-            message="Invalid email or password."
-        )
+        raise AuthenticationException(message="Invalid email or password.")
 
-    if not verify_password(
-        password,
-        user.password_hash
-    ):
-        logger.warning(
-            "Authentication failed: invalid credentials"
-        )
+    if not verify_password(password, user.password_hash):
+        logger.warning("Authentication failed: invalid credentials")
 
-        raise AuthenticationException(
-            message="Invalid email or password."
-        )
+        raise AuthenticationException(message="Invalid email or password.")
 
-    membership = get_membership(
-        db,
-        user.id
-    )
+    membership = get_membership(db, user.id)
 
     if not membership:
         logger.warning(
             "Authentication failed: organisation membership missing | user_id=%s",
-            user.id
+            user.id,
         )
 
         raise AuthorizationException(
@@ -162,28 +143,22 @@ def authenticate_user(
 
     access_token = create_access_token(
         user_id=str(user.id),
-        organisation_id=str(
-            membership.organisation_id
-        ),
-        role=membership.role
+        organisation_id=str(membership.organisation_id),
+        role=membership.role,
     )
 
-    refresh_token = create_refresh_token(
-        user_id=str(user.id)
-    )
+    refresh_token = create_refresh_token(user_id=str(user.id))
 
     logger.info(
         "User authenticated successfully | user_id=%s organisation_id=%s",
         user.id,
-        membership.organisation_id
+        membership.organisation_id,
     )
 
     return access_token, refresh_token
 
-def refresh_access_token(
-    db: Session,
-    refresh_token: str
-):
+
+def refresh_access_token(db: Session, refresh_token: str):
     """
     Validate a refresh token and create a new access token.
 
@@ -203,66 +178,42 @@ def refresh_access_token(
     payload = decode_token(refresh_token)
 
     if payload.get("type") != "refresh":
-        logger.warning(
-            "Refresh token rejected: incorrect token type"
-        )
+        logger.warning("Refresh token rejected: incorrect token type")
 
-        raise AuthenticationException(
-            message="Invalid refresh token."
-        )
+        raise AuthenticationException(message="Invalid refresh token.")
 
     user_id = payload.get("sub")
 
     if not user_id:
-        logger.warning(
-            "Refresh token rejected: missing subject"
-        )
+        logger.warning("Refresh token rejected: missing subject")
 
-        raise AuthenticationException(
-            message="Invalid refresh token."
-        )
+        raise AuthenticationException(message="Invalid refresh token.")
 
-    user = get_user_by_id(
-        db,
-        user_id
-    )
+    user = get_user_by_id(db, user_id)
 
     if not user or not user.is_active:
         logger.warning(
-            "Refresh token rejected: inactive or missing user | user_id=%s",
-            user_id
+            "Refresh token rejected: inactive or missing user | user_id=%s", user_id
         )
 
-        raise AuthenticationException(
-            message="User is inactive or does not exist."
-        )
+        raise AuthenticationException(message="User is inactive or does not exist.")
 
-    membership = get_membership(
-        db,
-        user.id
-    )
+    membership = get_membership(db, user.id)
 
     if not membership:
         logger.warning(
             "Refresh token rejected: organisation membership missing | user_id=%s",
-            user.id
+            user.id,
         )
 
-        raise AuthorizationException(
-            message="Organisation membership not found."
-        )
+        raise AuthorizationException(message="Organisation membership not found.")
 
     access_token = create_access_token(
         user_id=str(user.id),
-        organisation_id=str(
-            membership.organisation_id
-        ),
-        role=membership.role
+        organisation_id=str(membership.organisation_id),
+        role=membership.role,
     )
 
-    logger.info(
-        "Access token refreshed successfully | user_id=%s",
-        user.id
-    )
+    logger.info("Access token refreshed successfully | user_id=%s", user.id)
 
     return access_token

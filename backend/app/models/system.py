@@ -40,46 +40,32 @@ class IdempotencyKey(Base):
         created_at: Timestamp when the key was recorded.
         expires_at: Timestamp after which the key may no longer be valid.
     """
-    
+
     __tablename__ = "idempotency_keys"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organisations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
-    key: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False
-    )
+    key: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    resource_type: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False
-    )
+    resource_type: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    resource_id: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True
-    )
+    resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
     expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
     __table_args__ = (
