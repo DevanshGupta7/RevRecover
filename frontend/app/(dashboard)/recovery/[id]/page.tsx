@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, BrainCircuit } from "lucide-react";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,25 +14,114 @@ import { RecoveryStrategy } from "@/components/recovery/RecoveryStrategy";
 
 import { getRecoveryCaseById } from "@/services/recovery.service";
 
-interface RecoveryDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+function formatCurrency(amount: number | string) {
+  const numericAmount = Number(amount);
+
+  return `₹${numericAmount.toLocaleString("en-IN")}`;
 }
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+export default function RecoveryDetailsPage() {
+  const params = useParams();
 
-export default async function RecoveryDetailsPage({
-  params,
-}: RecoveryDetailsPageProps) {
-  const { id } = await params;
+  const id = params.id as string;
 
-  const recoveryCase = await getRecoveryCaseById(id);
+  const [recoveryCase, setRecoveryCase] = useState<
+    Awaited<ReturnType<typeof getRecoveryCaseById>> | null
+  >(null);
 
-  if (!recoveryCase) {
-    notFound();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    async function loadRecoveryCase() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await getRecoveryCaseById(id);
+
+        if (!data) {
+          setError("Recovery case not found.");
+          return;
+        }
+
+        setRecoveryCase(data);
+      } catch (err) {
+        console.error(
+          "Failed to load recovery case:",
+          err
+        );
+
+        setError("Unable to load recovery case.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRecoveryCase();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/recovery">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Recovery Cases
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="text-sm text-zinc-500">
+              Loading recovery case...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !recoveryCase) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/recovery">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Recovery Cases
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <h1 className="text-lg font-medium text-zinc-100">
+              Recovery case not found
+            </h1>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              {error ??
+                "The requested recovery case could not be loaded."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -44,7 +136,6 @@ export default async function RecoveryDetailsPage({
           >
             <Link href="/recovery">
               <ArrowLeft className="h-4 w-4" />
-
               Back to Recovery Cases
             </Link>
           </Button>

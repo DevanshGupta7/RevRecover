@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, BrainCircuit } from "lucide-react";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,21 +15,108 @@ import { StrategyCases } from "@/components/strategies/StrategyCases";
 
 import { getStrategyById } from "@/services/strategy.service";
 
-interface StrategyDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
+export default function StrategyDetailsPage() {
+  const params = useParams();
 
-export default async function StrategyDetailsPage({
-  params,
-}: StrategyDetailsPageProps) {
-  const { id } = await params;
+  const id = params.id as string;
 
-  const strategy = getStrategyById(id);
+  const [strategy, setStrategy] = useState<
+    Awaited<ReturnType<typeof getStrategyById>> | null
+  >(null);
 
-  if (!strategy) {
-    notFound();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    async function loadStrategy() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await getStrategyById(id);
+
+        if (!data) {
+          setError("Strategy not found.");
+          return;
+        }
+
+        setStrategy(data);
+      } catch (err) {
+        console.error(
+          "Failed to load strategy:",
+          err
+        );
+
+        setError("Unable to load strategy.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStrategy();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/strategies">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Recovery Strategies
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="text-sm text-zinc-500">
+              Loading strategy...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !strategy) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/strategies">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Recovery Strategies
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <h1 className="text-lg font-medium text-zinc-100">
+              Strategy not found
+            </h1>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              {error ??
+                "The requested strategy could not be loaded."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -41,7 +131,6 @@ export default async function StrategyDetailsPage({
           >
             <Link href="/strategies">
               <ArrowLeft className="h-4 w-4" />
-
               Back to Recovery Strategies
             </Link>
           </Button>
