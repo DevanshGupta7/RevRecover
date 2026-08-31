@@ -5,11 +5,15 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import ResourceNotFoundException
 from app.services.recovery.actions import create_recovery_action
 from app.services.recovery.ai_service import analyze_recovery_case
+from app.services.recovery.constants import ACTION_HUMAN_APPROVAL, ACTION_STOP
 from app.services.recovery.engine import RecoveryEngine
+from app.services.recovery.policy import validate_strategy
 from app.services.recovery.repository import (
+    count_payment_recovery_attempts,
     get_active_policy,
     get_payment_for_organisation,
 )
+from app.services.recovery.strategy import select_strategy
 
 
 class RecoveryService:
@@ -53,11 +57,47 @@ class RecoveryService:
             db.commit()
             raise
 
+        strategy = select_strategy(
+            failure_type=recovery_case.risk_type,
+            recommended_action=ai_decision.recommended_action,
+            recommended_delay_hours=ai_decision.recommended_delay_hours,
+            requires_human_approval=ai_decision.requires_human_approval,
+            allowed_channels=policy.allowed_channels or [],
+        )
+
+        policy_validation = validate_strategy(
+            policy=policy,
+            strategy=strategy,
+            amount=payment.amount,
+            current_attempts=count_payment_recovery_attempts(
+                db=db,
+                payment_id=payment.id,
+                organisation_id=organisation_id,
+            ),
+        )
+
+        if not policy_validation.allowed:
+            recovery_case.status = "stopped"
+            recovery_case.current_step = "policy_validation"
+            db.flush()
+            db.commit()
+            return recovery_case, ai_decision, None
+
+        if strategy.action_type == ACTION_HUMAN_APPROVAL:
+            recovery_case.status = "awaiting_approval"
+            recovery_case.current_step = "human_approval"
+        elif strategy.action_type == ACTION_STOP:
+            recovery_case.status = "stopped"
+            recovery_case.current_step = "policy_validation"
+        else:
+            recovery_case.status = "planned"
+            recovery_case.current_step = "execute_recovery"
+
         recovery_action = create_recovery_action(
             db=db,
             recovery_case=recovery_case,
             policy=policy,
-            recommended_action=ai_decision.recommended_action,
+            strategy=strategy,
         )
 
         db.commit()

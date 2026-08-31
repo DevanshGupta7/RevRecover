@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, UserRound } from "lucide-react";
-import { notFound } from "next/navigation";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,25 +16,109 @@ import { RecoveryDecision } from "@/components/payments/RecoveryDecision";
 
 import { getPaymentById } from "@/services/payment.service";
 
-interface PaymentDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+function formatCurrency(amount: number | string) {
+  const numericAmount = Number(amount);
+
+  return `₹${numericAmount.toLocaleString("en-IN")}`;
 }
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+export default function PaymentDetailsPage() {
+  const params = useParams();
 
-export default async function PaymentDetailsPage({
-  params,
-}: PaymentDetailsPageProps) {
-  const { id } = await params;
+  const id = params.id as string;
 
-  const payment = await getPaymentById(id);
+  const [payment, setPayment] = useState<
+    Awaited<ReturnType<typeof getPaymentById>> | null
+  >(null);
 
-  if (!payment) {
-    notFound();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    async function loadPayment() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await getPaymentById(id);
+
+        if (!data) {
+          setError("Payment not found.");
+          return;
+        }
+
+        setPayment(data);
+      } catch (err) {
+        console.error("Failed to load payment:", err);
+        setError("Unable to load payment.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPayment();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/payments">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Failed Payments
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="text-sm text-zinc-500">
+              Loading payment...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !payment) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/payments">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Failed Payments
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <h1 className="text-lg font-medium text-zinc-100">
+              Payment not found
+            </h1>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              {error ?? "The requested payment could not be loaded."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -45,7 +133,6 @@ export default async function PaymentDetailsPage({
           >
             <Link href="/payments">
               <ArrowLeft className="h-4 w-4" />
-
               Back to Failed Payments
             </Link>
           </Button>
@@ -114,9 +201,7 @@ export default async function PaymentDetailsPage({
                     </p>
 
                     <div className="mt-2">
-                      <PaymentStatus
-                        status={payment.status}
-                      />
+                      <PaymentStatus status={payment.status} />
                     </div>
                   </div>
 
@@ -242,9 +327,7 @@ export default async function PaymentDetailsPage({
 
               <CardContent className="p-5 pt-2">
                 <RecoveryEligibility
-                  eligibility={
-                    payment.recoveryEligibility
-                  }
+                  eligibility={payment.recoveryEligibility}
                 />
               </CardContent>
             </Card>

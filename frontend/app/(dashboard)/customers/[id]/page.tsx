@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -7,7 +9,8 @@ import {
   RotateCcw,
   UserRound,
 } from "lucide-react";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,29 +22,118 @@ import { RecoveryHistory } from "@/components/customers/RecoveryHistory";
 
 import { getCustomerById } from "@/services/customer.service";
 
-interface CustomerDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
+function formatCurrency(amount: number | string) {
+  const numericAmount = Number(amount);
 
-function formatCurrency(amount: number) {
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(2)}L`;
+  if (numericAmount >= 100000) {
+    return `₹${(numericAmount / 100000).toFixed(2)}L`;
   }
 
-  return `₹${amount.toLocaleString("en-IN")}`;
+  return `₹${numericAmount.toLocaleString("en-IN")}`;
 }
 
-export default async function CustomerDetailsPage({
-  params,
-}: CustomerDetailsPageProps) {
-  const { id } = await params;
+export default function CustomerDetailsPage() {
+  const params = useParams();
 
-  const customer = await getCustomerById(id);
+  const id = params.id as string;
 
-  if (!customer) {
-    notFound();
+  const [customer, setCustomer] = useState<
+    Awaited<ReturnType<typeof getCustomerById>> | null
+  >(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    async function loadCustomer() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await getCustomerById(id);
+
+        if (!data) {
+          setError("Customer not found.");
+          return;
+        }
+
+        setCustomer(data);
+      } catch (err) {
+        console.error(
+          "Failed to load customer:",
+          err
+        );
+
+        setError("Unable to load customer.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCustomer();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1500px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/customers">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Customers
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="text-sm text-zinc-500">
+              Loading customer...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !customer) {
+    return (
+      <div className="min-h-full">
+        <div className="mx-auto w-full max-w-[1500px] p-5 md:p-8">
+          <div className="mb-6">
+            <Button
+              asChild
+              variant="ghost"
+              className="-ml-2 gap-2 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+            >
+              <Link href="/customers">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Customers
+              </Link>
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
+            <h1 className="text-lg font-medium text-zinc-100">
+              Customer not found
+            </h1>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              {error ??
+                "The requested customer could not be loaded."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -56,7 +148,6 @@ export default async function CustomerDetailsPage({
           >
             <Link href="/customers">
               <ArrowLeft className="h-4 w-4" />
-
               Back to Customers
             </Link>
           </Button>
@@ -114,9 +205,7 @@ export default async function CustomerDetailsPage({
               </div>
 
               <p className="mt-2 text-2xl font-semibold text-zinc-100">
-                {formatCurrency(
-                  customer.lifetimeValue
-                )}
+                {formatCurrency(customer.lifetimeValue)}
               </p>
             </CardContent>
           </Card>
@@ -148,9 +237,7 @@ export default async function CustomerDetailsPage({
               </div>
 
               <p className="mt-2 text-2xl font-semibold text-emerald-400">
-                {formatCurrency(
-                  customer.recoveredRevenue
-                )}
+                {formatCurrency(customer.recoveredRevenue)}
               </p>
             </CardContent>
           </Card>
@@ -181,7 +268,6 @@ export default async function CustomerDetailsPage({
 
         {/* History */}
         <div className="grid min-w-0 max-w-full gap-8">
-          {/* Payment History */}
           <section className="min-w-0">
             <div className="mb-4">
               <h2 className="text-sm font-medium text-zinc-200">
@@ -189,7 +275,8 @@ export default async function CustomerDetailsPage({
               </h2>
 
               <p className="mt-1 text-xs text-zinc-600">
-                Successful and failed payment activity for this customer.
+                Successful and failed payment activity for this
+                customer.
               </p>
             </div>
 
@@ -198,7 +285,6 @@ export default async function CustomerDetailsPage({
             />
           </section>
 
-          {/* Recovery History */}
           <section className="min-w-0">
             <div className="mb-4">
               <h2 className="text-sm font-medium text-zinc-200">
