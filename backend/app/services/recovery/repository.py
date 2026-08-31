@@ -1,10 +1,90 @@
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.ai_decision import AIDecision
 from app.models.payment import Payment
-from app.models.recovery import RecoveryAction, RecoveryCase, RecoveryPolicy
+from app.models.recovery import (
+    RecoveryAction,
+    RecoveryAttempt,
+    RecoveryCase,
+    RecoveryPolicy,
+)
+
+
+def count_successful_customer_payments(
+    db: Session,
+    customer_id: UUID,
+    organisation_id: UUID,
+) -> int:
+    """
+    Count successful payments made by an organisation-owned customer.
+    """
+
+    return (
+        db.query(func.count(Payment.id))
+        .filter(
+            Payment.customer_id == customer_id,
+            Payment.organisation_id == organisation_id,
+            Payment.status.in_(
+                [
+                    "captured",
+                    "paid",
+                    "success",
+                    "successful",
+                ]
+            ),
+        )
+        .scalar()
+        or 0
+    )
+
+
+def count_failed_customer_payments(
+    db: Session,
+    customer_id: UUID,
+    organisation_id: UUID,
+) -> int:
+    """
+    Count failed payments belonging to an organisation-owned customer.
+    """
+
+    return (
+        db.query(func.count(Payment.id))
+        .filter(
+            Payment.customer_id == customer_id,
+            Payment.organisation_id == organisation_id,
+            Payment.status == "failed",
+        )
+        .scalar()
+        or 0
+    )
+
+
+def count_payment_recovery_attempts(
+    db: Session,
+    payment_id: UUID,
+    organisation_id: UUID,
+) -> int:
+    """
+    Count actual recovery attempts associated with an organisation-owned
+    payment.
+    """
+
+    return (
+        db.query(func.count(RecoveryAttempt.id))
+        .join(
+            RecoveryCase,
+            RecoveryAttempt.recovery_case_id == RecoveryCase.id,
+        )
+        .filter(
+            RecoveryCase.payment_id == payment_id,
+            RecoveryCase.organisation_id == organisation_id,
+        )
+        .scalar()
+        or 0
+    )
 
 
 def get_payment_for_organisation(

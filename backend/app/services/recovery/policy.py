@@ -17,7 +17,7 @@ def action_allowed_by_policy(policy: RecoveryPolicy, action: str) -> bool:
         channels = [channel.lower() for channel in (policy.allowed_channels or [])]
         return "email" in channels
 
-    if action == "RETRY":
+    if action in {"RETRY", "RETRY_AFTER_DELAY", "CREATE_PAYMENT_LINK"}:
         return True
 
     if action in {"WAIT", "ESCALATE", "STOP"}:
