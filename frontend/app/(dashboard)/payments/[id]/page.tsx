@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, UserRound } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,7 +24,6 @@ function formatCurrency(amount: number | string) {
 
 export default function PaymentDetailsPage() {
   const params = useParams();
-  const router = useRouter();
 
   const id = params.id as string;
 
