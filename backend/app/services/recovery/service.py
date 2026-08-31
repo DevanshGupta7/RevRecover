@@ -21,9 +21,19 @@ class RecoveryService:
         if payment is None:
             raise ResourceNotFoundException(message="Payment not found.")
 
+        policy = get_active_policy(db=db, organisation_id=organisation_id)
+
+        if policy is None:
+            raise ResourceNotFoundException(
+                message="No active recovery policy exists for this organisation."
+            )
+
         engine = RecoveryEngine()
         recovery_case = engine.create_case_for_payment(
-            db=db, payment_id=payment_id, organisation_id=organisation_id
+            db=db,
+            payment_id=payment_id,
+            organisation_id=organisation_id,
+            policy=policy,
         )
 
         if recovery_case is None:
@@ -42,13 +52,6 @@ class RecoveryService:
             recovery_case.current_step = "ai_analysis"
             db.commit()
             raise
-
-        policy = get_active_policy(db=db, organisation_id=organisation_id)
-
-        if policy is None:
-            raise ResourceNotFoundException(
-                message="No active recovery policy exists for this organisation."
-            )
 
         recovery_action = create_recovery_action(
             db=db,
