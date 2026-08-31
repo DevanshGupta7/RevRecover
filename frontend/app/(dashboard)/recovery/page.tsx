@@ -1,3 +1,10 @@
+"use client";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   BrainCircuit,
   CircleDollarSign,
@@ -9,8 +16,44 @@ import { RecoveryTable } from "@/components/recovery/RecoveryTable";
 
 import { getRecoveryData } from "@/services/recovery.service";
 
+import type { RecoveryData } from "@/types/recovery";
+
 export default function RecoveryPage() {
-  const recovery = getRecoveryData();
+  const [recovery, setRecovery] = useState<RecoveryData>({
+    summary: {
+      activeCases: 0,
+      recoveredToday: 0,
+      revenueRecovered: 0,
+    },
+    cases: [],
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const data = await getRecoveryData();
+
+        if (active) {
+          setRecovery(data);
+        }
+      } catch {
+        if (active) {
+          setRecovery({
+            summary: { activeCases: 0, recoveredToday: 0, revenueRecovered: 0 },
+            cases: [],
+          });
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-full">

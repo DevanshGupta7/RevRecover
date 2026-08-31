@@ -1,3 +1,10 @@
+"use client";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   BrainCircuit,
   Users,
@@ -8,8 +15,36 @@ import { CustomerTable } from "@/components/customers/CustomerTable";
 
 import { getCustomerData } from "@/services/customer.service";
 
+import type { CustomerData } from "@/types/customer";
+
 export default function CustomersPage() {
-  const customerData = getCustomerData();
+  const [customerData, setCustomerData] = useState<CustomerData>({
+    summary: {
+      totalCustomers: 0,
+      highValueCustomers: 0,
+      customersWithRecoveryCases: 0,
+      totalCustomerLtv: 0,
+    },
+    customers: [],
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const data = await getCustomerData();
+
+      if (active) {
+        setCustomerData(data);
+      }
+    }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-full">

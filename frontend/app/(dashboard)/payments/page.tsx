@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,34 @@ import type {
 } from "@/types/payment";
 
 export default function PaymentsPage() {
-  const [payments] = useState(() => getFailedPayments());
+  const [payments, setPayments] = useState<Awaited<ReturnType<typeof getFailedPayments>>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      setIsLoading(true);
+
+      try {
+        const data = await getFailedPayments();
+
+        if (active) {
+          setPayments(data);
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const [search, setSearch] = useState("");
   const [failureReason, setFailureReason] =
@@ -157,6 +184,12 @@ export default function PaymentsPage() {
             </span>{" "}
             failed payments
           </p>
+
+          {isLoading && (
+            <span className="text-xs text-zinc-500">
+              Loading…
+            </span>
+          )}
         </div>
 
         {/* Table */}

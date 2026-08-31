@@ -38,7 +38,7 @@ export default async function CustomerDetailsPage({
 }: CustomerDetailsPageProps) {
   const { id } = await params;
 
-  const customer = getCustomerById(id);
+  const customer = await getCustomerById(id);
 
   if (!customer) {
     notFound();

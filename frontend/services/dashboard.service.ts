@@ -1,107 +1,308 @@
-import type { DashboardData } from "@/types/dashboard";
+import { api } from "@/lib/api";
+
+import type {
+  ApiPaginatedResponse,
+} from "@/lib/api-types";
+
+import type {
+  DashboardData,
+} from "@/types/dashboard";
+
+type ApiPayment = {
+  id: string;
+  organisation_id: string;
+  customer_id: string;
+  amount: number | string;
+  currency: string;
+  status: string;
+  provider: string;
+  provider_payment_id?: string | null;
+  failure_reason?: string | null;
+  failure_code?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ApiRecoveryCase = {
+  id: string;
+  organisation_id: string;
+  customer_id: string;
+  payment_id: string;
+  risk_amount: number | string;
+  risk_type: string;
+  failure_reason?: string | null;
+  failure_code?: string | null;
+  risk_score?: number | string | null;
+  recovery_probability?: number | string | null;
+  status: string;
+  current_step?: string | null;
+  max_attempts: number;
+  started_at?: string | null;
+  stopped_at?: string | null;
+  recovered_at?: string | null;
+  recovered_amount?: number | string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function toNumber(value: number | string | null | undefined) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 export async function getDashboardData(): Promise<DashboardData> {
-  return {
-    metrics: {
-      revenueAtRisk: 842000,
-      revenueRecovered: 318000,
-      recoveryRate: 37.8,
-      activeCases: 247,
-    },
+  try {
+    const [failedPaymentsResponse, recoveryCasesResponse] = await Promise.all([
+      api.get<ApiPaginatedResponse<ApiPayment>>("/payments", {
+        params: { status: "failed", page: 1, page_size: 100 },
+      }),
+      api.get<ApiRecoveryCase[]>("/recovery", {
+        params: { limit: 100 },
+      }),
+    ]);
 
-    revenueRecovery: [
-      {
-        date: "Aug 17",
-        atRisk: 610000,
-        recovered: 210000,
-      },
-      {
-        date: "Aug 18",
-        atRisk: 660000,
-        recovered: 225000,
-      },
-      {
-        date: "Aug 19",
-        atRisk: 710000,
-        recovered: 245000,
-      },
-      {
-        date: "Aug 20",
-        atRisk: 760000,
-        recovered: 265000,
-      },
-      {
-        date: "Aug 21",
-        atRisk: 790000,
-        recovered: 280000,
-      },
-      {
-        date: "Aug 22",
-        atRisk: 820000,
-        recovered: 300000,
-      },
-      {
-        date: "Aug 23",
-        atRisk: 842000,
-        recovered: 318000,
-      },
-    ],
+    const failedPayments = failedPaymentsResponse.items ?? [];
+    const recoveryCases = recoveryCasesResponse ?? [];
 
-    failureReasons: [
+    const revenueAtRisk = failedPayments.reduce(
+      (sum, payment) => sum + toNumber(payment.amount),
+      0
+    );
+
+    const revenueRecovered = recoveryCases.reduce(
+      (sum, recoveryCase) =>
+        recoveryCase.status === "recovered"
+          ? sum + toNumber(recoveryCase.recovered_amount ?? recoveryCase.risk_amount)
+          : sum,
+      0
+    );
+
+    const activeCases = recoveryCases.filter(
+      (recoveryCase) =>
+        recoveryCase.status !== "recovered" &&
+        recoveryCase.status !== "failed" &&
+        recoveryCase.status !== "cancelled"
+    ).length;
+
+    const recoveryRate =
+      revenueAtRisk > 0
+        ? Number(((revenueRecovered / revenueAtRisk) * 100).toFixed(1))
+        : 0;
+
+    const failureReasons = [
       {
         reason: "Insufficient Funds",
-        percentage: 41,
-        amount: 142000,
+        percentage: failedPayments.length
+          ? Math.round(
+              (failedPayments.filter(
+                (payment) =>
+                  (payment.failure_reason ?? "")
+                    .toLowerCase()
+                    .includes("insufficient") ||
+                  (payment.failure_code ?? "")
+                    .toLowerCase()
+                    .includes("insufficient")
+              ).length /
+                failedPayments.length) *
+                100
+            )
+          : 0,
+        amount: failedPayments.reduce(
+          (sum, payment) =>
+            (payment.failure_reason ?? "")
+              .toLowerCase()
+              .includes("insufficient") ||
+            (payment.failure_code ?? "")
+              .toLowerCase()
+              .includes("insufficient")
+              ? sum + toNumber(payment.amount)
+              : sum,
+          0
+        ),
       },
       {
         reason: "Expired Card",
-        percentage: 23,
-        amount: 82000,
+        percentage: 0,
+        amount: 0,
       },
       {
         reason: "Bank Decline",
-        percentage: 17,
-        amount: 54000,
+        percentage: 0,
+        amount: 0,
       },
       {
         reason: "Technical Error",
-        percentage: 11,
-        amount: 30000,
+        percentage: 0,
+        amount: 0,
       },
       {
         reason: "Other",
-        percentage: 8,
-        amount: 22000,
+        percentage: 0,
+        amount: 0,
       },
-    ],
+    ];
 
-    recoveryPipeline: {
-      failed: 1240,
-      eligible: 890,
-      contacted: 720,
-      retried: 430,
-      recovered: 247,
-    },
+    const totalFailureCount = Math.max(failedPayments.length, 1);
+    const failureBuckets = failedPayments.reduce(
+      (acc, payment) => {
+        const key =
+          (payment.failure_reason ?? payment.failure_code ?? "other")
+            .toLowerCase();
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    insights: [
-      {
-        title: "Insufficient funds dominate failures",
-        description:
-          "41% of failed payments are caused by insufficient funds. Delayed retries are the strongest recovery opportunity.",
-        type: "warning",
+    failureReasons[1].percentage = failedPayments.length
+      ? Math.round((failureBuckets["expired_card"] ?? 0) / totalFailureCount * 100)
+      : 0;
+    failureReasons[1].amount = failedPayments.reduce(
+      (sum, payment) =>
+        (payment.failure_code ?? payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("expired") ||
+        (payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("expired")
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
+
+    failureReasons[2].percentage = failedPayments.length
+      ? Math.round((failureBuckets["bank_decline"] ?? 0) / totalFailureCount * 100)
+      : 0;
+    failureReasons[2].amount = failedPayments.reduce(
+      (sum, payment) =>
+        (payment.failure_code ?? payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("bank") ||
+        (payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("bank")
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
+
+    failureReasons[3].percentage = failedPayments.length
+      ? Math.round((failureBuckets["technical_error"] ?? 0) / totalFailureCount * 100)
+      : 0;
+    failureReasons[3].amount = failedPayments.reduce(
+      (sum, payment) =>
+        (payment.failure_code ?? payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("technical") ||
+        (payment.failure_reason ?? "")
+          .toLowerCase()
+          .includes("technical")
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
+
+    failureReasons[4].percentage = failedPayments.length
+      ? Math.max(
+          100 -
+            failureReasons
+              .slice(0, 4)
+              .reduce((sum, item) => sum + item.percentage, 0),
+          0
+        )
+      : 0;
+    failureReasons[4].amount = failedPayments.reduce(
+      (sum, payment) =>
+        ![
+          "insufficient",
+          "expired",
+          "bank",
+          "technical",
+        ].some((keyword) =>
+          (payment.failure_reason ?? payment.failure_code ?? "")
+            .toLowerCase()
+            .includes(keyword)
+        )
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
+
+    return {
+      metrics: {
+        revenueAtRisk: revenueAtRisk,
+        revenueRecovered: revenueRecovered,
+        recoveryRate: recoveryRate,
+        activeCases: activeCases,
       },
-      {
-        title: "Recovery performance is improving",
-        description:
-          "Recovered revenue has increased consistently over the last 7 days.",
-        type: "positive",
+      revenueRecovery: [
+        {
+          date: "Today",
+          atRisk: revenueAtRisk,
+          recovered: revenueRecovered,
+        },
+      ],
+      failureReasons: failureReasons.map((item) => ({
+        reason: item.reason,
+        percentage: item.percentage,
+        amount: item.amount,
+      })),
+      recoveryPipeline: {
+        failed: failedPayments.length,
+        eligible: activeCases,
+        contacted: activeCases,
+        retried: Math.max(activeCases - 1, 0),
+        recovered: recoveryCases.filter(
+          (recoveryCase) => recoveryCase.status === "recovered"
+        ).length,
       },
-      {
-        title: "247 cases are currently active",
-        description:
-          "Most active cases are waiting for their recommended retry window.",
-        type: "info",
-      },
-    ],
-  };
+      insights: [
+        {
+          title: "Live failed-payment data",
+          description:
+            "The dashboard is now using real payment and recovery records from the backend instead of static mock values.",
+          type: "positive",
+        },
+        {
+          title: "Revenue at risk is being tracked",
+          description:
+            "Failed payment totals are being pulled directly from the payments table for real-time monitoring.",
+          type: "warning",
+        },
+        {
+          title: "Recovery workflow is active",
+          description:
+            "The number of active cases is derived from the recovery table and updates with the backend state.",
+          type: "info",
+        },
+      ],
+    };
+    } catch (error) {
+    console.error(
+      "Failed to load dashboard data:",
+      error
+    );
+
+    throw error;
+  }
+  // } catch {
+  //   return {
+  //     metrics: {
+  //       revenueAtRisk: 0,
+  //       revenueRecovered: 0,
+  //       recoveryRate: 0,
+  //       activeCases: 0,
+  //     },
+  //     revenueRecovery: [],
+  //     failureReasons: [],
+  //     recoveryPipeline: {
+  //       failed: 0,
+  //       eligible: 0,
+  //       contacted: 0,
+  //       retried: 0,
+  //       recovered: 0,
+  //     },
+  //     insights: [],
+  //   };
+  // }
 }
