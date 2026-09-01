@@ -14,6 +14,7 @@ class RecoveryActionResponse(BaseModel):
     step_number: int
     planned_at: datetime | None
     executed_at: datetime | None
+    result_data: dict | None
 
 
 class AIDecisionResponse(BaseModel):
