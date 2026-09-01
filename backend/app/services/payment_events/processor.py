@@ -138,7 +138,7 @@ def process_payment_event(
         payment_id=payment.id,
         attempt_number=attempt_number,
         status=parsed_event.payment_status or "unknown",
-        provider_attempt_id=parsed_event.payment_id,
+        provider_attempt_id=None,
         provider_event_id=parsed_event.provider_event_id,
         failure_reason=parsed_event.failure_reason,
         failure_code=parsed_event.failure_code,

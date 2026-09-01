@@ -45,7 +45,7 @@ def analyze_recovery_case(
     db.add(ai_decision)
 
     recovery_case.recovery_probability = Decimal(str(decision.confidence))
-    recovery_case.status = "analyzed"
+    recovery_case.status = "planned"
     recovery_case.current_step = "policy_validation"
 
     db.flush()

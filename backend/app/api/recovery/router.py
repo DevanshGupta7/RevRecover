@@ -13,10 +13,8 @@ from app.api.recovery.schemas import (
 )
 from app.core.exceptions import ResourceNotFoundException
 from app.db.database import get_db
-from app.services.recovery.execution import execute_recovery_action
 from app.services.recovery.repository import (
     get_ai_decision,
-    get_recovery_action,
     get_recovery_actions,
     get_recovery_case,
     get_recovery_cases,
@@ -107,46 +105,6 @@ def get_recovery_actions_endpoint(
         raise ResourceNotFoundException(message="Recovery case not found.")
 
     return get_recovery_actions(db=db, recovery_case_id=recovery_case_id)
-
-
-@router.post(
-    "/actions/{recovery_action_id}/execute",
-    response_model=RecoveryActionResponse,
-)
-def execute_recovery_action_endpoint(
-    recovery_action_id: UUID,
-    current_user: Annotated[tuple, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
-):
-    _, membership = current_user
-
-    recovery_action = get_recovery_action(
-        db=db,
-        recovery_action_id=recovery_action_id,
-        organisation_id=membership.organisation_id,
-    )
-
-    if recovery_action is None:
-        raise ResourceNotFoundException(message="Recovery action not found.")
-
-    recovery_case = get_recovery_case(
-        db=db,
-        recovery_case_id=recovery_action.recovery_case_id,
-        organisation_id=membership.organisation_id,
-    )
-
-    if recovery_case is None:
-        raise ResourceNotFoundException(message="Recovery case not found.")
-
-    result = execute_recovery_action(
-        db=db,
-        recovery_case=recovery_case,
-        recovery_action=recovery_action,
-    )
-
-    db.commit()
-
-    return result
 
 
 @router.post(

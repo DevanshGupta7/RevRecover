@@ -33,16 +33,11 @@ def evaluate_eligibility(
             reason="Payment is not currently failed.",
         )
 
-    RECOVERABLE_WITH_PAYMENT_LINK = {
-        "expired_card",
-        "bank_decline",
-    }
-
-    if not analysis.retryable and analysis.failure_type not in RECOVERABLE_WITH_PAYMENT_LINK:
+    if not analysis.retryable:
         return EligibilityResult(
             eligible=False,
             reason=(
-                f"Failure type '{analysis.failure_type}' is not currently recoverable."
+                f"Failure type '{analysis.failure_type}' is not currently retryable."
             ),
         )
 

@@ -29,16 +29,6 @@ class PaymentProvider(ABC):
         """Create a payment link."""
 
     @abstractmethod
-    def create_order(
-        self,
-        *,
-        amount: int,
-        currency: str,
-        receipt: str,
-    ) -> dict[str, Any]:
-        """Create a Razorpay order for a retry attempt."""
-
-    @abstractmethod
     def verify_payment_signature(
         self, order_id: str, payment_id: str, signature: str
     ) -> None:
