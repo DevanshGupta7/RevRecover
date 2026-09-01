@@ -97,3 +97,26 @@ class RazorpayService(PaymentProvider):
             raise RazorpayAPIException(
                 "Failed to create Razorpay Payment Link."
             ) from exc
+
+    def create_order(
+        self,
+        *,
+        amount: int,
+        currency: str,
+        receipt: str,
+    ) -> dict[str, Any]:
+        """
+        Create a new Razorpay order for a recovery retry attempt.
+        """
+
+        payload = {
+            "amount": amount,
+            "currency": currency,
+            "receipt": receipt,
+        }
+
+        try:
+            return self.client.client.order.create(data=payload)
+
+        except Exception as exc:
+            raise RazorpayAPIException("Failed to create Razorpay order.") from exc
