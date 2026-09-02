@@ -11,14 +11,16 @@ from app.api.recovery.schemas import (
     RecoveryCaseResponse,
     RecoveryProcessResponse,
 )
-from app.core.exceptions import ResourceNotFoundException
+from app.core.exceptions import ResourceNotFoundException, ValidationException
 from app.db.database import get_db
 from app.services.recovery.execution import execute_recovery_action
 from app.services.recovery.repository import (
     get_ai_decision,
+    get_payment_for_organisation,
     get_recovery_action,
     get_recovery_actions,
     get_recovery_case,
+    get_recovery_case_for_payment,
     get_recovery_cases,
 )
 from app.services.recovery.service import RecoveryService
@@ -161,6 +163,41 @@ def process_payment_recovery(
 ):
     _, membership = current_user
 
+    payment = get_payment_for_organisation(
+        db=db,
+        payment_id=payment_id,
+        organisation_id=membership.organisation_id,
+    )
+
+    if payment is None:
+        raise ResourceNotFoundException(message="Payment not found.")
+
+    existing_case = get_recovery_case_for_payment(
+        db=db,
+        payment_id=payment_id,
+        organisation_id=membership.organisation_id,
+    )
+
+    if existing_case is not None:
+        return RecoveryProcessResponse(
+            already_exists=True,
+            recovery_case=existing_case,
+            ai_decision=get_ai_decision(
+                db=db,
+                recovery_case_id=existing_case.id,
+                organisation_id=membership.organisation_id,
+            ),
+            recovery_action=next(
+                iter(get_recovery_actions(db=db, recovery_case_id=existing_case.id)),
+                None,
+            ),
+        )
+
+    if payment.status != "failed":
+        raise ValidationException(
+            message="Recovery can only be started for failed payments."
+        )
+
     result = RecoveryService().process_payment(
         db=db, payment_id=payment_id, organisation_id=membership.organisation_id
     )
@@ -173,6 +210,8 @@ def process_payment_recovery(
     recovery_case, ai_decision, recovery_action = result
 
     return RecoveryProcessResponse(
+        success=True,
+        already_exists=False,
         recovery_case=recovery_case,
         ai_decision=ai_decision,
         recovery_action=recovery_action,

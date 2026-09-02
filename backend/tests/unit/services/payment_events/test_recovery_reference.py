@@ -1,4 +1,4 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from app.services.payment_events.recovery_reference import (
     recovery_case_id_from_reference,

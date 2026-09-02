@@ -136,6 +136,8 @@ def record_payment_link_payment_event(
                 status=parsed_event.payment_status or parsed_event.event_type,
                 provider_event_id=parsed_event.provider_event_id,
                 provider_attempt_id=parsed_event.payment_id,
+                failure_reason=parsed_event.failure_reason,
+                failure_code=parsed_event.failure_code,
                 attempted_at=parsed_event.provider_created_at,
             )
         )

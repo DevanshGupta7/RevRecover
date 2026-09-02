@@ -23,9 +23,7 @@ def recovery_case_id_from_reference(
     
     reference_id = reference_id.strip()
 
-    if reference_id.startswith("RR-"):
-        raw_uuid = reference_id[3:]
-    elif reference_id.startswith("RR:"):
+    if reference_id.startswith(("RR-", "RR:")):
         raw_uuid = reference_id[3:]
     else:
         raise ValueError("Invalid RevRecover recovery reference.")

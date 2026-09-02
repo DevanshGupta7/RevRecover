@@ -54,6 +54,8 @@ class RecoveryCaseResponse(BaseModel):
 
 
 class RecoveryProcessResponse(BaseModel):
+    success: bool = True
+    already_exists: bool = False
     recovery_case: RecoveryCaseResponse
-    ai_decision: AIDecisionResponse
-    recovery_action: RecoveryActionResponse
+    ai_decision: AIDecisionResponse | None = None
+    recovery_action: RecoveryActionResponse | None = None

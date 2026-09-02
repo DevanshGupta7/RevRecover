@@ -2,9 +2,14 @@ import {
   ArrowRight,
   BrainCircuit,
   CheckCircle2,
+  LoaderCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { startRecovery } from "@/services/recovery.service";
 import type { FailedPayment } from "@/types/payment";
 
 interface RecoveryDecisionProps {
@@ -42,6 +47,9 @@ function getStrategyLabel(
 export function RecoveryDecision({
   payment,
 }: RecoveryDecisionProps) {
+  const [starting, setStarting] = useState(false);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof startRecovery>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const reasons = [
     `Customer has successfully paid ${payment.successfulPayments} times previously`,
     `Customer lifetime value: ${formatCurrency(
@@ -132,6 +140,55 @@ export function RecoveryDecision({
               )}
             </span>
           </div>
+
+          {payment.status === "failed" && !result && (
+            <Button
+              className="mt-4 w-full border-emerald-400/30 bg-emerald-500/15 text-emerald-300 shadow-[0_0_24px_rgba(16,185,129,0.12)] hover:bg-emerald-500/25 sm:w-auto"
+              disabled={starting}
+              onClick={async () => {
+                setStarting(true);
+                setError(null);
+
+                try {
+                  setResult(await startRecovery(payment.id));
+                } catch (startError) {
+                  setError(
+                    startError instanceof Error
+                      ? startError.message
+                      : "Unable to start recovery."
+                  );
+                } finally {
+                  setStarting(false);
+                }
+              }}
+            >
+              {starting && <LoaderCircle className="animate-spin" />}
+              {starting ? "Starting Recovery..." : "Start Recovery"}
+            </Button>
+          )}
+
+          {error && (
+            <p className="mt-3 text-sm text-red-400">{error}</p>
+          )}
+
+          {result && (
+            <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <p className="text-sm font-medium text-emerald-400">
+                Recovery {result.already_exists ? "already prepared" : "started"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-400">
+                Status: {result.recovery_case.status}
+                {result.recovery_action
+                  ? ` | Action: ${result.recovery_action.action_type}`
+                  : ""}
+              </p>
+              <Button asChild variant="outline" className="mt-3">
+                <Link href={`/recovery/${result.recovery_case.id}`}>
+                  View Recovery Case
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
