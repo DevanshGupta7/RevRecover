@@ -9,6 +9,7 @@ import type {
   CustomerData,
   CustomerPayment,
   CustomerRecovery,
+  CustomerRecoveryStatus,
 } from "@/types/customer";
 
 type ApiCustomer = {
@@ -38,6 +39,16 @@ type ApiPayment = {
   updated_at: string;
 };
 
+type ApiRecoveryCase = {
+  id: string;
+  customer_id: string;
+  payment_id: string;
+  risk_amount: number | string;
+  status: string;
+  recovered_amount?: number | string | null;
+  created_at: string;
+};
+
 function toNumber(value: number | string | null | undefined) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -47,6 +58,27 @@ function isSuccessfulPayment(status: string) {
   return status === "captured" || status === "succeeded";
 }
 
+function getCustomerRisk(
+  failedAmount: number,
+  lifetimeValue: number
+): Customer["risk"] {
+  if (failedAmount <= 0 || lifetimeValue <= 0) {
+    return "low";
+  }
+
+  const atRiskRatio = failedAmount / lifetimeValue;
+
+  if (atRiskRatio >= 0.5) {
+    return "high";
+  }
+
+  if (atRiskRatio >= 0.25) {
+    return "medium";
+  }
+
+  return "low";
+}
+
 async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
   // Fetch customer's payment history for aggregates
   let paymentHistory: CustomerPayment[] = [];
@@ -54,9 +86,10 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
   let lifetimeValue = 0;
   let successfulPayments = 0;
   let failedPayments = 0;
-  const recoveredRevenue = 0;
-  const recoverySuccessRate = 0;
-  const activeRecoveryCases = 0;
+  let failedAmount = 0;
+  let recoveredRevenue = 0;
+  let recoverySuccessRate = 0;
+  let activeRecoveryCases = 0;
 
   try {
     const paymentsResponse = await api
@@ -78,6 +111,13 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
     failedPayments = payments.filter(
       (p) => p.status === "failed"
     ).length;
+    failedAmount = payments.reduce(
+      (sum, payment) =>
+        payment.status === "failed"
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
 
     paymentHistory = payments
       .slice(0, 10)
@@ -92,6 +132,54 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
     // Ignore errors in payment history
   }
 
+  try {
+    const recoveryCases = await api.get<ApiRecoveryCase[]>(
+      "/recovery",
+      { params: { limit: 100 } }
+    );
+    const customerRecoveryCases = (recoveryCases ?? []).filter(
+      (recoveryCase) => recoveryCase.customer_id === customer.id
+    );
+
+    const recoveredCases = customerRecoveryCases.filter(
+      (recoveryCase) => recoveryCase.status === "recovered"
+    );
+
+    recoveryHistory.push(
+      ...customerRecoveryCases.map((recoveryCase) => ({
+        id: recoveryCase.id,
+        paymentId: recoveryCase.payment_id,
+        amount: toNumber(recoveryCase.risk_amount),
+        strategy: "Recovery workflow",
+        status: (
+          recoveryCase.status === "recovered"
+            ? "recovered"
+            : recoveryCase.status === "failed"
+              ? "failed"
+              : "waiting"
+        ) as CustomerRecoveryStatus,
+        probability: 0,
+        recoveredAmount: toNumber(recoveryCase.recovered_amount),
+        createdAt: recoveryCase.created_at,
+      }))
+    );
+
+    recoveredRevenue = recoveredCases.reduce(
+      (sum, recoveryCase) =>
+        sum + toNumber(recoveryCase.recovered_amount ?? recoveryCase.risk_amount),
+      0
+    );
+    recoverySuccessRate = customerRecoveryCases.length > 0
+      ? Math.round((recoveredCases.length / customerRecoveryCases.length) * 100)
+      : 0;
+    activeRecoveryCases = customerRecoveryCases.filter(
+      (recoveryCase) =>
+        !["recovered", "failed", "cancelled"].includes(recoveryCase.status)
+    ).length;
+  } catch {
+    // Ignore errors in recovery history
+  }
+
   return {
     id: customer.id,
     name: customer.name ?? "Customer",
@@ -102,7 +190,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
     failedPayments,
     recoveredRevenue,
     recoverySuccessRate,
-    risk: failedPayments > successfulPayments ? "high" : "low",
+    risk: getCustomerRisk(failedAmount, lifetimeValue),
     preferredStrategy: "Retry after delay",
     averagePaymentAmount:
       successfulPayments > 0
