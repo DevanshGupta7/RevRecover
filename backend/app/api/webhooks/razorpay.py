@@ -22,6 +22,7 @@ from app.services.payment_events.parser import (
     parse_payment_link_event,
 )
 from app.services.recovery.reconciliation import (
+    record_payment_link_payment_event,
     reconcile_successful_payment_link,
 )
 
@@ -155,6 +156,32 @@ async def razorpay_webhook(
             db.commit()
 
         else:
+            if event_type in {"payment.authorized", "payment.captured"}:
+                handled_as_recovery = record_payment_link_payment_event(
+                    db=db,
+                    organisation_id=organisation.id,
+                    parsed_event=parsed_event,
+                )
+
+            else:
+                handled_as_recovery = False
+
+            if handled_as_recovery:
+                logger.info(
+                    "Recorded Payment Link payment event on recovery payment | "
+                    "event=%s "
+                    "payment_id=%s payment_link_id=%s",
+                    event_type,
+                    parsed_event.payment_id,
+                    parsed_event.payment_link_id,
+                )
+                db.commit()
+                return {
+                    "received": True,
+                    "duplicate": False,
+                    "event_id": provider_event_id,
+                }
+
             payment = process_payment_event(
                 db=db,
                 organisation_id=organisation.id,

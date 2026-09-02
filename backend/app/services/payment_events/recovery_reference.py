@@ -4,6 +4,7 @@ from uuid import UUID
 def recovery_reference_from_case_id(recovery_case_id: UUID) -> str:
     return f"RR-{recovery_case_id}"
 
+
 def recovery_case_id_from_reference(
     reference_id: str | None,
 ) -> UUID:
@@ -12,7 +13,9 @@ def recovery_case_id_from_reference(
     reference ID.
 
     Expected format:
-        recovery:<recovery_case_uuid>
+        RR-<recovery_case_uuid>
+
+    The colon form is accepted for compatibility with older links.
     """
 
     if not reference_id:
@@ -20,10 +23,12 @@ def recovery_case_id_from_reference(
     
     reference_id = reference_id.strip()
 
-    if not reference_id.startswith("RR:"):
+    if reference_id.startswith("RR-"):
+        raw_uuid = reference_id[3:]
+    elif reference_id.startswith("RR:"):
+        raw_uuid = reference_id[3:]
+    else:
         raise ValueError("Invalid RevRecover recovery reference.")
-
-    raw_uuid = reference_id[3:]
 
     try:
         return UUID(raw_uuid)

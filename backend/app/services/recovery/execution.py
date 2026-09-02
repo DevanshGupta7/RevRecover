@@ -88,7 +88,11 @@ def execute_create_payment_link(
     recovery_action.result_data = {
         "payment_link_id": result.get("id"),
         "short_url": result.get("short_url"),
-        "reference_id": result.get("reference_id"),
+        **(
+            {"reference_id": result["reference_id"]}
+            if result.get("reference_id") is not None
+            else {}
+        ),
     }
 
     db.flush()
@@ -180,7 +184,11 @@ def execute_recovery_action(
         recovery_action.result_data = {
             "payment_link_id": result.get("id"),
             "short_url": result.get("short_url"),
-            "reference_id": result.get("reference_id"),
+            **(
+                {"reference_id": result["reference_id"]}
+                if result.get("reference_id") is not None
+                else {}
+            ),
         }
 
     elif recovery_action.action_type == "RETRY_PAYMENT":

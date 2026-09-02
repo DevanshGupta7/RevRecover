@@ -21,6 +21,7 @@ class ParsedPaymentEvent:
     provider_account_id: str | None
     
     reference_id: str | None
+    payment_link_id: str | None
 
     payment_id: str | None
     order_id: str | None
@@ -111,11 +112,17 @@ def parse_payment_event(*, payload: dict, provider_event_id: str) -> ParsedPayme
     if not isinstance(error, dict):
         error = {}
 
+    description = payment.get("description")
+    payment_link_id = None
+    if isinstance(description, str) and description.startswith("#"):
+        payment_link_id = f"plink_{description[1:]}"
+
     return ParsedPaymentEvent(
         event_type=event_type,
         provider_event_id=provider_event_id,
         provider_account_id=account_id,
         reference_id=payment.get("reference_id"),
+        payment_link_id=payment_link_id,
         customer_email=payment.get("email"),
         customer_phone=payment.get("contact"),
         customer_name=None,

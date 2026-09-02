@@ -23,9 +23,125 @@ from app.models.recovery import (
     RecoveryAttempt,
     RecoveryCase,
 )
-from app.services.payment_events.parser import ParsedPaymentLinkEvent
+from app.services.payment_events.parser import (
+    ParsedPaymentEvent,
+    ParsedPaymentLinkEvent,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _payment_link_action_for_event(
+    db: Session,
+    *,
+    organisation_id: UUID,
+    payment_link_id: str,
+) -> tuple[RecoveryCase, RecoveryAction] | None:
+    actions = (
+        db.query(RecoveryAction, RecoveryCase)
+        .join(
+            RecoveryCase,
+            RecoveryCase.id == RecoveryAction.recovery_case_id,
+        )
+        .filter(
+            RecoveryCase.organisation_id == organisation_id,
+            RecoveryAction.action_type == "CREATE_PAYMENT_LINK",
+        )
+        .all()
+    )
+
+    for action, recovery_case in actions:
+        if (action.result_data or {}).get("payment_link_id") == payment_link_id:
+            return recovery_case, action
+
+    return None
+
+
+def record_payment_link_payment_event(
+    db: Session,
+    *,
+    organisation_id: UUID,
+    parsed_event: ParsedPaymentEvent,
+) -> bool:
+    """Record a Payment Link payment event on its original Payment.
+
+    Returns False when the Payment Link does not belong to a RevRecover
+    recovery action, allowing ordinary provider payments to use the generic
+    payment processor.
+    """
+    if not parsed_event.payment_link_id:
+        return False
+
+    match = _payment_link_action_for_event(
+        db,
+        organisation_id=organisation_id,
+        payment_link_id=parsed_event.payment_link_id,
+    )
+    if match is None:
+        return False
+
+    recovery_case, _recovery_action = match
+
+    if parsed_event.event_type == "payment.captured":
+        reconcile_successful_payment_link(
+            db=db,
+            organisation_id=organisation_id,
+            recovery_case_id=recovery_case.id,
+            parsed_event=ParsedPaymentLinkEvent(
+                event_type="payment_link.paid",
+                provider_event_id=parsed_event.provider_event_id,
+                provider_account_id=parsed_event.provider_account_id,
+                payment_link_id=parsed_event.payment_link_id,
+                reference_id=None,
+                payment_id=parsed_event.payment_id,
+                amount_subunits=parsed_event.amount_subunits,
+                currency=parsed_event.currency,
+                provider_created_at=parsed_event.provider_created_at,
+            ),
+        )
+        return True
+
+    payment = (
+        db.query(Payment)
+        .filter(
+            Payment.id == recovery_case.payment_id,
+            Payment.organisation_id == organisation_id,
+        )
+        .first()
+    )
+    if payment is None:
+        raise ResourceNotFoundException(
+            message="Original payment associated with recovery case was not found."
+        )
+
+    existing_attempt = (
+        db.query(PaymentAttempt)
+        .filter(
+            PaymentAttempt.payment_id == payment.id,
+            PaymentAttempt.provider_event_id == parsed_event.provider_event_id,
+        )
+        .first()
+    )
+    if existing_attempt is None:
+        last_attempt = (
+            db.query(PaymentAttempt)
+            .filter(PaymentAttempt.payment_id == payment.id)
+            .order_by(PaymentAttempt.attempt_number.desc())
+            .first()
+        )
+        db.add(
+            PaymentAttempt(
+                payment_id=payment.id,
+                attempt_number=1 if last_attempt is None else last_attempt.attempt_number + 1,
+                status=parsed_event.payment_status or parsed_event.event_type,
+                provider_event_id=parsed_event.provider_event_id,
+                provider_attempt_id=parsed_event.payment_id,
+                attempted_at=parsed_event.provider_created_at,
+            )
+        )
+        db.flush()
+
+    return True
 
 
 def reconcile_successful_payment_link(

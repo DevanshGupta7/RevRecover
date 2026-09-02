@@ -1,4 +1,4 @@
-export type PaymentStatus = "failed";
+export type PaymentStatus = "failed" | "succeeded";
 
 export type FailureReason =
   | "insufficient_funds"

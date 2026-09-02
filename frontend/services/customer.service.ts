@@ -43,6 +43,10 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isSuccessfulPayment(status: string) {
+  return status === "captured" || status === "succeeded";
+}
+
 async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
   // Fetch customer's payment history for aggregates
   let paymentHistory: CustomerPayment[] = [];
@@ -69,7 +73,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
     );
 
     successfulPayments = payments.filter(
-      (p) => p.status === "succeeded"
+      (p) => isSuccessfulPayment(p.status)
     ).length;
     failedPayments = payments.filter(
       (p) => p.status === "failed"
@@ -80,7 +84,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
       .map((p: ApiPayment) => ({
         id: p.id,
         amount: toNumber(p.amount),
-        status: p.status === "succeeded" ? "succeeded" : "failed",
+        status: isSuccessfulPayment(p.status) ? "succeeded" : "failed",
         failureReason: p.failure_reason ?? undefined,
         createdAt: p.created_at,
       }));

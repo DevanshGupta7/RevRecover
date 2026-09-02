@@ -43,6 +43,10 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isSuccessfulPayment(status: string) {
+  return status === "captured" || status === "succeeded";
+}
+
 function mapFailureReason(
   value?: string | null
 ): FailureReason {
@@ -70,6 +74,7 @@ function mapFailureReason(
 function mapRecoveryEligibility(
   status: string
 ): RecoveryEligibility {
+  if (isSuccessfulPayment(status)) return "not_eligible";
   if (status === "failed") return "high";
   if (status === "pending") return "medium";
   return "not_eligible";
@@ -109,11 +114,14 @@ function mapPaymentToFailedPayment(
     customerEmail: customer?.email ?? "",
     amount,
     currency: "INR",
-    status: "failed",
+    status: isSuccessfulPayment(payment.status)
+      ? "succeeded"
+      : "failed",
     failureReason,
-    failureMessage:
-      payment.failure_reason ??
-      "The payment failed during processing.",
+    failureMessage: isSuccessfulPayment(payment.status)
+      ? "The payment was completed successfully."
+      : payment.failure_reason ??
+        "The payment failed during processing.",
     failedAt:
       payment.updated_at ?? payment.created_at,
     previousAttempts,
