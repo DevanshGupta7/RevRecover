@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -123,7 +124,7 @@ async def razorpay_webhook(
             detail=str(exc),
         ) from exc
 
-    _webhook_event, created = create_webhook_event(
+    webhook_event, created = create_webhook_event(
         db=db,
         organisation_id=organisation.id,
         provider="razorpay",
@@ -153,6 +154,8 @@ async def razorpay_webhook(
                 parsed_event=parsed_event,
             )
 
+            webhook_event.status = "processed"
+            webhook_event.processed_at = datetime.now(timezone.utc)
             db.commit()
 
         else:
@@ -179,6 +182,8 @@ async def razorpay_webhook(
                     parsed_event.payment_id,
                     parsed_event.payment_link_id,
                 )
+                webhook_event.status = "processed"
+                webhook_event.processed_at = datetime.now(timezone.utc)
                 db.commit()
                 return {
                     "received": True,
@@ -192,6 +197,8 @@ async def razorpay_webhook(
                 parsed_event=parsed_event,
             )
 
+            webhook_event.status = "processed"
+            webhook_event.processed_at = datetime.now(timezone.utc)
             db.commit()
 
             if event_type == "payment.failed":

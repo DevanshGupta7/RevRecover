@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import PolicyViolationException
 from app.models.recovery import RecoveryAction, RecoveryCase, RecoveryPolicy
+from app.services.audit import record_audit_event
 from app.services.recovery.constants import (
     ACTION_HUMAN_APPROVAL,
     ACTION_STOP,
@@ -86,6 +87,19 @@ def create_recovery_action(
 
     db.add(recovery_action)
     db.flush()
+
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="recovery_action_planned",
+        event_name="Recovery action planned",
+        actor="System",
+        entity_type="recovery_action",
+        entity_id=str(recovery_action.id),
+        result="success",
+        description="A recovery action was planned by the recovery strategy.",
+        action=action_strategy.action_type,
+    )
 
     logger.info(
         "Recovery action created | case_id=%s action=%s status=%s",
