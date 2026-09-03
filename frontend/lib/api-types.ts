@@ -1,9 +1,15 @@
 export interface ApiErrorResponse {
-  message: string;
+  message?: string;
 
   code?: string;
 
   details?: unknown;
+
+  error?: {
+    message: string;
+    code?: string;
+    details?: unknown;
+  };
 }
 
 export interface ApiSuccessResponse<T> {

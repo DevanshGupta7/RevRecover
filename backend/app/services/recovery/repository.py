@@ -13,6 +13,21 @@ from app.models.recovery import (
 )
 
 
+def get_recovery_case_by_id(
+    db: Session,
+    recovery_case_id: UUID,
+    organisation_id: UUID,
+) -> RecoveryCase | None:
+    return (
+        db.query(RecoveryCase)
+        .filter(
+            RecoveryCase.id == recovery_case_id,
+            RecoveryCase.organisation_id == organisation_id,
+        )
+        .first()
+    )
+
+
 def count_successful_customer_payments(
     db: Session,
     customer_id: UUID,
@@ -168,4 +183,20 @@ def get_recovery_actions(db: Session, recovery_case_id: UUID) -> list[RecoveryAc
         .filter(RecoveryAction.recovery_case_id == recovery_case_id)
         .order_by(RecoveryAction.step_number.asc())
         .all()
+    )
+
+
+def get_recovery_action(
+    db: Session,
+    recovery_action_id: UUID,
+    organisation_id: UUID,
+) -> RecoveryAction | None:
+    return (
+        db.query(RecoveryAction)
+        .join(RecoveryCase, RecoveryAction.recovery_case_id == RecoveryCase.id)
+        .filter(
+            RecoveryAction.id == recovery_action_id,
+            RecoveryCase.organisation_id == organisation_id,
+        )
+        .first()
     )

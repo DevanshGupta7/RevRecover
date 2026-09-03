@@ -12,8 +12,18 @@ from app.core.config import settings
 from app.db.database import get_db
 from app.integrations.razorpay.exceptions import RazorpaySignatureException
 from app.integrations.razorpay.webhooks import verify_webhook_signature
-from app.services.payment_events.parser import parse_payment_event
+from app.services.payment_events.parser import (
+    parse_payment_event,
+    parse_payment_link_event,
+)
 from app.services.payment_events.processor import process_payment_event
+from app.services.payment_events.recovery_reference import (
+    recovery_case_id_from_reference,
+)
+from app.services.recovery.reconciliation import (
+    reconcile_successful_payment_link,
+    record_payment_link_payment_event,
+)
 from app.services.recovery.service import RecoveryService
 
 logger = logging.getLogger(__name__)
@@ -96,11 +106,22 @@ async def razorpay_webhook(
         raise HTTPException(status_code=400, detail="Unknown Razorpay account.")
 
     try:
-        parsed_event = parse_payment_event(
-            payload=payload, provider_event_id=provider_event_id
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if event_type == "payment_link.paid":
+            parsed_event = parse_payment_link_event(
+                payload=payload,
+                provider_event_id=provider_event_id,
+            )
+        else:
+            parsed_event = parse_payment_event(
+                payload=payload,
+                provider_event_id=provider_event_id,
+            )
+
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
     _webhook_event, created = create_webhook_event(
         db=db,
@@ -120,28 +141,82 @@ async def razorpay_webhook(
         return {"received": True, "duplicate": True, "event_id": provider_event_id}
 
     try:
-        payment = process_payment_event(
-            db=db, organisation_id=organisation.id, parsed_event=parsed_event
-        )
-        db.commit()
+        if event_type == "payment_link.paid":
+            recovery_case_id = recovery_case_id_from_reference(
+                parsed_event.reference_id
+            )
 
-        if event_type == "payment.failed":
-            try:
-                RecoveryService().process_payment(
-                    db=db, payment_id=payment.id, organisation_id=organisation.id
+            reconcile_successful_payment_link(
+                db=db,
+                organisation_id=organisation.id,
+                recovery_case_id=recovery_case_id,
+                parsed_event=parsed_event,
+            )
+
+            db.commit()
+
+        else:
+            if event_type in {
+                "payment.authorized",
+                "payment.captured",
+                "payment.failed",
+            }:
+                handled_as_recovery = record_payment_link_payment_event(
+                    db=db,
+                    organisation_id=organisation.id,
+                    parsed_event=parsed_event,
                 )
-            except Exception:
-                logger.exception(
-                    "Recovery processing failed | payment_id=%s", payment.id
+
+            else:
+                handled_as_recovery = False
+
+            if handled_as_recovery:
+                logger.info(
+                    "Recorded Payment Link payment event on recovery payment | "
+                    "event=%s "
+                    "payment_id=%s payment_link_id=%s",
+                    event_type,
+                    parsed_event.payment_id,
+                    parsed_event.payment_link_id,
                 )
+                db.commit()
+                return {
+                    "received": True,
+                    "duplicate": False,
+                    "event_id": provider_event_id,
+                }
+
+            payment = process_payment_event(
+                db=db,
+                organisation_id=organisation.id,
+                parsed_event=parsed_event,
+            )
+
+            db.commit()
+
+            if event_type == "payment.failed":
+                try:
+                    RecoveryService().process_payment(
+                        db=db,
+                        payment_id=payment.id,
+                        organisation_id=organisation.id,
+                    )
+
+                except Exception:
+                    logger.exception(
+                        "Recovery processing failed | payment_id=%s",
+                        payment.id,
+                    )
 
     except Exception:
         db.rollback()
+
         logger.exception(
             "Failed to process Razorpay payment event | event_id=%s event=%s",
             provider_event_id,
             event_type,
         )
+
         raise
 
     logger.info(

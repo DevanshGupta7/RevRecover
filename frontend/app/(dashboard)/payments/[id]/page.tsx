@@ -155,8 +155,9 @@ export default function PaymentDetailsPage() {
               </div>
 
               <p className="mt-2 text-sm text-zinc-500">
-                Review the failure context and RevRecover&apos;s
-                recovery decision.
+                {payment.status === "succeeded"
+                  ? "Review the completed payment and recovery outcome."
+                  : "Review the failure context and RevRecover&apos;s recovery decision."}
               </p>
             </div>
 
@@ -207,7 +208,9 @@ export default function PaymentDetailsPage() {
 
                   <div>
                     <p className="text-xs text-zinc-500">
-                      Failure reason
+                      {payment.status === "succeeded"
+                        ? "Payment outcome"
+                        : "Failure reason"}
                     </p>
 
                     <div className="mt-2">

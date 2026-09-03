@@ -1,11 +1,27 @@
 export type RecoveryCaseStatus =
   | "waiting"
+  | "awaiting_approval"
   | "scheduled"
   | "contacted"
   | "retrying"
   | "recovered"
   | "failed"
   | "cancelled";
+
+export type RecoveryAction = {
+  id: string;
+  actionType: string;
+  status: string;
+  stepNumber: number;
+  plannedAt?: string | null;
+  executedAt?: string | null;
+  resultData?: {
+    payment_link_id?: string;
+    short_url?: string;
+    reference_id?: string;
+    [key: string]: unknown;
+  } | null;
+};
 
 export type RecoveryEventStatus =
   | "completed"
@@ -63,6 +79,8 @@ export interface RecoveryCase {
   attemptNumber: number;
 
   timeline: RecoveryTimelineEvent[];
+
+  action?: RecoveryAction | null;
 }
 
 export interface RecoverySummary {

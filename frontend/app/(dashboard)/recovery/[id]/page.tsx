@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RecoveryStatus } from "@/components/recovery/RecoveryStatus";
 import { RecoveryTimeline } from "@/components/recovery/RecoveryTimeline";
 import { RecoveryStrategy } from "@/components/recovery/RecoveryStrategy";
+import { RecoveryActionCard } from "@/components/recovery/RecoveryActionCard";
 
 import { getRecoveryCaseById } from "@/services/recovery.service";
 
@@ -64,6 +65,30 @@ export default function RecoveryDetailsPage() {
 
     loadRecoveryCase();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || recoveryCase?.status !== "waiting") {
+      return;
+    }
+
+    const interval = window.setInterval(async () => {
+      const data = await getRecoveryCaseById(id);
+
+      if (data) {
+        setRecoveryCase(data);
+      }
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [id, recoveryCase?.status]);
+
+  async function reloadRecoveryCase() {
+    const data = await getRecoveryCaseById(id);
+
+    if (data) {
+      setRecoveryCase(data);
+    }
+  }
 
   if (loading) {
     return (
@@ -343,6 +368,12 @@ export default function RecoveryDetailsPage() {
                 </p>
               </CardContent>
             </Card>
+
+            <RecoveryActionCard
+              action={recoveryCase.action}
+              caseStatus={recoveryCase.status}
+              onExecuted={reloadRecoveryCase}
+            />
           </div>
         </div>
       </div>

@@ -50,21 +50,72 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function dateKey(value: string) {
+  return value.slice(0, 10);
+}
+
+function formatChartDate(value: string) {
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function getDateRange(startDate: string, endDate: string) {
+  const dates: string[] = [];
+  const current = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+
+  while (current <= end) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
+function getFailureCategory(payment: ApiPayment) {
+  const failure = `${payment.failure_reason ?? ""} ${payment.failure_code ?? ""}`
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
+
+  if (failure.includes("insufficient")) return "insufficient_funds";
+  if (failure.includes("expired")) return "expired_card";
+  if (failure.includes("bank")) return "bank_decline";
+  if (failure.includes("technical") || failure.includes("network") || failure.includes("gateway")) {
+    return "technical_error";
+  }
+  return "other";
+}
+
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    const [failedPaymentsResponse, recoveryCasesResponse] = await Promise.all([
+    const [paymentsResponse, recoveryCasesResponse] = await Promise.all([
       api.get<ApiPaginatedResponse<ApiPayment>>("/payments", {
-        params: { status: "failed", page: 1, page_size: 100 },
+        params: { page: 1, page_size: 100 },
       }),
       api.get<ApiRecoveryCase[]>("/recovery", {
         params: { limit: 100 },
       }),
     ]);
 
-    const failedPayments = failedPaymentsResponse.items ?? [];
+    const payments = paymentsResponse.items ?? [];
+    const failedPayments = payments.filter((payment) => payment.status === "failed");
     const recoveryCases = recoveryCasesResponse ?? [];
 
-    const revenueAtRisk = failedPayments.reduce(
+    const recoveryCasePaymentIds = new Set(
+      recoveryCases.map((recoveryCase) => recoveryCase.payment_id)
+    );
+    const unrecoveredFailedPayments = failedPayments.filter(
+      (payment) => !recoveryCasePaymentIds.has(payment.id)
+    );
+
+    const totalRecoveryOpportunity = recoveryCases.reduce(
+      (sum, recoveryCase) => sum + toNumber(recoveryCase.risk_amount),
+      0
+    ) + unrecoveredFailedPayments.reduce(
       (sum, payment) => sum + toNumber(payment.amount),
       0
     );
@@ -85,9 +136,74 @@ export async function getDashboardData(): Promise<DashboardData> {
     ).length;
 
     const recoveryRate =
-      revenueAtRisk > 0
-        ? Number(((revenueRecovered / revenueAtRisk) * 100).toFixed(1))
+      totalRecoveryOpportunity > 0
+        ? Number(((revenueRecovered / totalRecoveryOpportunity) * 100).toFixed(1))
         : 0;
+
+    const revenueAtRisk = Math.max(
+      totalRecoveryOpportunity - revenueRecovered,
+      0
+    );
+
+    const timeline = new Map<string, { opportunity: number; recovered: number }>();
+    const addTimelineValue = (
+      date: string,
+      key: "opportunity" | "recovered",
+      amount: number
+    ) => {
+      const point = timeline.get(date) ?? { opportunity: 0, recovered: 0 };
+      point[key] += amount;
+      timeline.set(date, point);
+    };
+
+    const paymentsById = new Map(payments.map((payment) => [payment.id, payment]));
+
+    recoveryCases.forEach((recoveryCase) => {
+      addTimelineValue(
+        dateKey(
+          paymentsById.get(recoveryCase.payment_id)?.created_at ??
+            recoveryCase.created_at
+        ),
+        "opportunity",
+        toNumber(recoveryCase.risk_amount)
+      );
+
+      if (recoveryCase.status === "recovered") {
+        addTimelineValue(
+          dateKey(recoveryCase.recovered_at ?? recoveryCase.updated_at),
+          "recovered",
+          toNumber(recoveryCase.recovered_amount ?? recoveryCase.risk_amount)
+        );
+      }
+    });
+
+    unrecoveredFailedPayments.forEach((payment) => {
+      addTimelineValue(
+        dateKey(payment.created_at),
+        "opportunity",
+        toNumber(payment.amount)
+      );
+    });
+
+    const timelineDates = Array.from(timeline.keys()).sort();
+    const today = new Date().toISOString().slice(0, 10);
+    const chartDates = timelineDates.length
+      ? getDateRange(timelineDates[0], today < timelineDates.at(-1)! ? timelineDates.at(-1)! : today)
+      : [today];
+
+    let cumulativeOpportunity = 0;
+    let cumulativeRecovered = 0;
+    const revenueRecovery = chartDates.map((date) => {
+        const values = timeline.get(date) ?? { opportunity: 0, recovered: 0 };
+        cumulativeOpportunity += values.opportunity;
+        cumulativeRecovered += values.recovered;
+
+        return {
+          date: formatChartDate(date),
+          atRisk: Math.max(cumulativeOpportunity - cumulativeRecovered, 0),
+          recovered: cumulativeRecovered,
+        };
+      });
 
     const failureReasons = [
       {
@@ -95,13 +211,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         percentage: failedPayments.length
           ? Math.round(
               (failedPayments.filter(
-                (payment) =>
-                  (payment.failure_reason ?? "")
-                    .toLowerCase()
-                    .includes("insufficient") ||
-                  (payment.failure_code ?? "")
-                    .toLowerCase()
-                    .includes("insufficient")
+                (payment) => getFailureCategory(payment) === "insufficient_funds"
               ).length /
                 failedPayments.length) *
                 100
@@ -109,12 +219,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           : 0,
         amount: failedPayments.reduce(
           (sum, payment) =>
-            (payment.failure_reason ?? "")
-              .toLowerCase()
-              .includes("insufficient") ||
-            (payment.failure_code ?? "")
-              .toLowerCase()
-              .includes("insufficient")
+            getFailureCategory(payment) === "insufficient_funds"
               ? sum + toNumber(payment.amount)
               : sum,
           0
@@ -145,9 +250,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const totalFailureCount = Math.max(failedPayments.length, 1);
     const failureBuckets = failedPayments.reduce(
       (acc, payment) => {
-        const key =
-          (payment.failure_reason ?? payment.failure_code ?? "other")
-            .toLowerCase();
+        const key = getFailureCategory(payment);
         acc[key] = (acc[key] ?? 0) + 1;
         return acc;
       },
@@ -159,12 +262,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       : 0;
     failureReasons[1].amount = failedPayments.reduce(
       (sum, payment) =>
-        (payment.failure_code ?? payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("expired") ||
-        (payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("expired")
+          getFailureCategory(payment) === "expired_card"
           ? sum + toNumber(payment.amount)
           : sum,
       0
@@ -175,12 +273,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       : 0;
     failureReasons[2].amount = failedPayments.reduce(
       (sum, payment) =>
-        (payment.failure_code ?? payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("bank") ||
-        (payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("bank")
+          getFailureCategory(payment) === "bank_decline"
           ? sum + toNumber(payment.amount)
           : sum,
       0
@@ -191,12 +284,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       : 0;
     failureReasons[3].amount = failedPayments.reduce(
       (sum, payment) =>
-        (payment.failure_code ?? payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("technical") ||
-        (payment.failure_reason ?? "")
-          .toLowerCase()
-          .includes("technical")
+          getFailureCategory(payment) === "technical_error"
           ? sum + toNumber(payment.amount)
           : sum,
       0
@@ -213,16 +301,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       : 0;
     failureReasons[4].amount = failedPayments.reduce(
       (sum, payment) =>
-        ![
-          "insufficient",
-          "expired",
-          "bank",
-          "technical",
-        ].some((keyword) =>
-          (payment.failure_reason ?? payment.failure_code ?? "")
-            .toLowerCase()
-            .includes(keyword)
-        )
+        getFailureCategory(payment) === "other"
           ? sum + toNumber(payment.amount)
           : sum,
       0
@@ -235,13 +314,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         recoveryRate: recoveryRate,
         activeCases: activeCases,
       },
-      revenueRecovery: [
-        {
-          date: "Today",
-          atRisk: revenueAtRisk,
-          recovered: revenueRecovered,
-        },
-      ],
+      revenueRecovery,
       failureReasons: failureReasons.map((item) => ({
         reason: item.reason,
         percentage: item.percentage,

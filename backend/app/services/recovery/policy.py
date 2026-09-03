@@ -30,7 +30,12 @@ def action_allowed_by_policy(policy: RecoveryPolicy, action: str) -> bool:
         channels = [channel.lower() for channel in (policy.allowed_channels or [])]
         return "email" in channels
 
-    if action in {"RETRY", "RETRY_AFTER_DELAY", "CREATE_PAYMENT_LINK"}:
+    if action in {
+        "RETRY",
+        "RETRY_AFTER_DELAY",
+        "CREATE_PAYMENT_LINK",
+        "SEND_EMAIL",
+    }:
         return True
 
     if action in {"WAIT", "ESCALATE", "STOP"}:
@@ -77,7 +82,7 @@ def validate_strategy(
 
     if (
         policy.require_approval_above is not None
-        and amount > policy.require_approval_above
+        and amount >= policy.require_approval_above
         and strategy.action_type != "HUMAN_APPROVAL"
     ):
         return PolicyValidationResult(

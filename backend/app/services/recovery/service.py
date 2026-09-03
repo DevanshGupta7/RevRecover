@@ -13,7 +13,7 @@ from app.services.recovery.repository import (
     get_active_policy,
     get_payment_for_organisation,
 )
-from app.services.recovery.strategy import select_strategy
+from app.services.recovery.strategy import RecoveryStrategy, select_strategy
 
 
 class RecoveryService:
@@ -61,7 +61,7 @@ class RecoveryService:
             failure_type=recovery_case.risk_type,
             recommended_action=ai_decision.recommended_action,
             recommended_delay_hours=ai_decision.recommended_delay_hours,
-            requires_human_approval=ai_decision.requires_human_approval,
+            requires_human_approval=False,
             allowed_channels=policy.allowed_channels or [],
         )
 
@@ -83,6 +83,21 @@ class RecoveryService:
             db.commit()
             return recovery_case, ai_decision, None
 
+        executable_action = strategy.action_type
+        if (
+            ai_decision.requires_human_approval
+            or policy_validation.requires_human_approval
+        ):
+            strategy = RecoveryStrategy(
+                action_type=ACTION_HUMAN_APPROVAL,
+                delay_hours=None,
+                channel=None,
+                requires_human_approval=True,
+                reason=(
+                    "The payment requires human approval before recovery can proceed."
+                ),
+            )
+
         if strategy.action_type == ACTION_HUMAN_APPROVAL:
             recovery_case.status = "awaiting_approval"
             recovery_case.current_step = "human_approval"
@@ -99,6 +114,14 @@ class RecoveryService:
             policy=policy,
             strategy=strategy,
         )
+
+        if (
+            recovery_action is not None
+            and strategy.action_type == ACTION_HUMAN_APPROVAL
+        ):
+            recovery_action.result_data = {
+                "approved_action": executable_action,
+            }
 
         db.commit()
 

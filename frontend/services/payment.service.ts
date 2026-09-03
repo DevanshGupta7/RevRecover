@@ -38,9 +38,19 @@ type ApiPayment = {
   updated_at: string;
 };
 
+type ApiPaymentAttempt = {
+  id: string;
+  attempt_number: number;
+  status: string;
+};
+
 function toNumber(value: number | string | null | undefined) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isSuccessfulPayment(status: string) {
+  return status === "captured" || status === "succeeded";
 }
 
 function mapFailureReason(
@@ -70,6 +80,7 @@ function mapFailureReason(
 function mapRecoveryEligibility(
   status: string
 ): RecoveryEligibility {
+  if (isSuccessfulPayment(status)) return "not_eligible";
   if (status === "failed") return "high";
   if (status === "pending") return "medium";
   return "not_eligible";
@@ -109,11 +120,14 @@ function mapPaymentToFailedPayment(
     customerEmail: customer?.email ?? "",
     amount,
     currency: "INR",
-    status: "failed",
+    status: isSuccessfulPayment(payment.status)
+      ? "succeeded"
+      : "failed",
     failureReason,
-    failureMessage:
-      payment.failure_reason ??
-      "The payment failed during processing.",
+    failureMessage: isSuccessfulPayment(payment.status)
+      ? "The payment was completed successfully."
+      : payment.failure_reason ??
+        "The payment failed during processing.",
     failedAt:
       payment.updated_at ?? payment.created_at,
     previousAttempts,
@@ -144,32 +158,56 @@ export async function getFailedPayments(): Promise<FailedPayment[]> {
       },
     });
 
-    const customers = await Promise.all(
+    const paymentContext = await Promise.all(
       (response.items ?? []).map(async (payment) => {
         try {
-          return await api.get<ApiCustomer>(
-            `/customers/${payment.customer_id}`
-          );
+          const [customer, customerPayments, attempts] = await Promise.all([
+            api.get<ApiCustomer>(`/customers/${payment.customer_id}`),
+            api.get<ApiPaginatedResponse<ApiPayment>>(
+              `/customers/${payment.customer_id}/payments`,
+              { params: { page: 1, page_size: 100 } }
+            ),
+            api.get<ApiPaymentAttempt[]>(`/payments/${payment.id}/attempts`),
+          ]);
+
+          return { payment, customer, customerPayments, attempts };
         } catch {
-          return null;
+          return {
+            payment,
+            customer: null,
+            customerPayments: { items: [], pagination: { page: 1, page_size: 100, total: 0, total_pages: 0 } },
+            attempts: [],
+          };
         }
       })
     );
 
-    const customerMap = new Map<string, ApiCustomer>();
+    return paymentContext.map(
+      ({ payment, customer, customerPayments, attempts }) => {
+        const customerPaymentItems = customerPayments.items ?? [];
+        const successfulPayments = customerPaymentItems.filter((item) =>
+          isSuccessfulPayment(item.status)
+        ).length;
+        const lifetimeValue = customerPaymentItems.reduce(
+          (total, item) => total + toNumber(item.amount),
+          0
+        );
 
-    customers.forEach((customer) => {
-      if (customer) {
-        customerMap.set(customer.id, customer);
+        return {
+          ...mapPaymentToFailedPayment(
+            payment,
+            customer,
+            attempts.length || 1
+          ),
+          customerLifetimeValue: lifetimeValue,
+          successfulPayments,
+          previousRetrySucceeded: attempts.some((attempt) =>
+            attempt.attempt_number > 1 &&
+            isSuccessfulPayment(attempt.status)
+          ),
+          subscriptionActive: customer?.status === "active",
+        };
       }
-    });
-
-    return (response.items ?? []).map((payment) =>
-      mapPaymentToFailedPayment(
-        payment,
-        customerMap.get(payment.customer_id),
-        1
-      )
     );
   } catch {
     return [];
@@ -182,22 +220,43 @@ export async function getPaymentById(
   try {
     const payment = await api.get<ApiPayment>(`/payments/${id}`);
 
-    const [customer, attempts] = await Promise.all([
+    const [customer, attempts, customerPayments] = await Promise.all([
       api
         .get<ApiCustomer>(`/customers/${payment.customer_id}`)
         .catch(() => null),
       api
-        .get<Array<{ id: string; attempt_number: number }>>(
+        .get<ApiPaymentAttempt[]>(
           `/payments/${id}/attempts`
         )
         .catch(() => []),
+      api
+        .get<ApiPaginatedResponse<ApiPayment>>(
+          `/customers/${payment.customer_id}/payments`,
+          { params: { page: 1, page_size: 100 } }
+        )
+        .catch(() => ({ items: [], pagination: { page: 1, page_size: 100, total: 0, total_pages: 0 } })),
     ]);
 
-    return mapPaymentToFailedPayment(
+    const customerPaymentItems = customerPayments.items ?? [];
+
+    return {
+      ...mapPaymentToFailedPayment(
       payment,
       customer,
       Array.isArray(attempts) ? attempts.length : 1
-    );
+      ),
+      customerLifetimeValue: customerPaymentItems.reduce(
+        (total, item) => total + toNumber(item.amount),
+        0
+      ),
+      successfulPayments: customerPaymentItems.filter((item) =>
+        isSuccessfulPayment(item.status)
+      ).length,
+      previousRetrySucceeded: attempts.some((attempt) =>
+        attempt.attempt_number > 1 && isSuccessfulPayment(attempt.status)
+      ),
+      subscriptionActive: customer?.status === "active",
+    };
   } catch {
     return null;
   }

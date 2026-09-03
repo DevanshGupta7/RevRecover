@@ -15,6 +15,7 @@ from app.services.recovery.constants import (
     ACTION_CREATE_PAYMENT_LINK,
     ACTION_HUMAN_APPROVAL,
     ACTION_RETRY_PAYMENT,
+    ACTION_SEND_EMAIL,
     ACTION_STOP,
 )
 
@@ -47,13 +48,25 @@ def select_strategy(
     the recovery strategy that can actually be executed.
     """
 
-    if requires_human_approval:
+    if requires_human_approval or recommended_action == "ESCALATE":
         return RecoveryStrategy(
             action_type=ACTION_HUMAN_APPROVAL,
             delay_hours=None,
             channel=None,
             requires_human_approval=True,
             reason=("The payment requires human approval before recovery can proceed."),
+        )
+
+    if recommended_action in {
+        "SEND_PAYMENT_REMINDER",
+        "REQUEST_PAYMENT_METHOD_UPDATE",
+    }:
+        return RecoveryStrategy(
+            action_type=ACTION_SEND_EMAIL,
+            delay_hours=None,
+            channel="email",
+            requires_human_approval=False,
+            reason="The customer should be contacted by email before continuing recovery.",
         )
 
     if failure_type == "insufficient_funds":

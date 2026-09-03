@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 
 import type {
   RecoveryCase,
+  RecoveryAction,
   RecoveryCaseStatus,
   RecoveryData,
   RecoveryTimelineEvent,
@@ -29,6 +30,54 @@ type ApiRecoveryCase = {
   updated_at: string;
 };
 
+type ApiRecoveryAction = {
+  id: string;
+  action_type: string;
+  status: string;
+  step_number: number;
+  planned_at?: string | null;
+  executed_at?: string | null;
+  result_data?: RecoveryAction["resultData"];
+};
+
+export type StartRecoveryResponse = {
+  success: boolean;
+  already_exists: boolean;
+  recovery_case: ApiRecoveryCase;
+  ai_decision?: {
+    recommended_action: string;
+  } | null;
+  recovery_action?: {
+    id: string;
+    action_type: string;
+    status: string;
+  } | null;
+};
+
+export async function startRecovery(
+  paymentId: string
+): Promise<StartRecoveryResponse> {
+  return api.post<StartRecoveryResponse>(
+    `/recovery/payments/${paymentId}/process`
+  );
+}
+
+export async function executeRecoveryAction(
+  actionId: string
+): Promise<ApiRecoveryAction> {
+  return api.post<ApiRecoveryAction>(
+    `/recovery/actions/${actionId}/execute`
+  );
+}
+
+export async function approveRecoveryAction(
+  actionId: string
+): Promise<ApiRecoveryAction> {
+  return api.post<ApiRecoveryAction>(
+    `/recovery/actions/${actionId}/approve`
+  );
+}
+
 function toNumber(value: number | string | null | undefined) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -48,6 +97,8 @@ function mapRecoveryStatus(
       return "retrying";
     case "recovered":
       return "recovered";
+    case "awaiting_approval":
+      return "awaiting_approval";
     case "failed":
       return "failed";
     case "cancelled":
@@ -271,11 +322,32 @@ export async function getRecoveryCaseById(
   id: string
 ): Promise<RecoveryCase | null> {
   try {
-    const recoveryCase = await api.get<ApiRecoveryCase>(
+    const [recoveryCase, actions] = await Promise.all([
+      api.get<ApiRecoveryCase>(
       `/recovery/${id}`
-    );
+      ),
+      api.get<ApiRecoveryAction[]>(
+        `/recovery/${id}/actions`
+      ),
+    ]);
 
-    return await mapRecoveryCase(recoveryCase);
+    const mappedCase = await mapRecoveryCase(recoveryCase);
+    const action = actions[0];
+
+    return {
+      ...mappedCase,
+      action: action
+        ? {
+            id: action.id,
+            actionType: action.action_type,
+            status: action.status,
+            stepNumber: action.step_number,
+            plannedAt: action.planned_at,
+            executedAt: action.executed_at,
+            resultData: action.result_data,
+          }
+        : null,
+    };
   } catch {
     return null;
   }

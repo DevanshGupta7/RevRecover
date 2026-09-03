@@ -211,12 +211,15 @@ async function request<T>(
     const errorBody =
       body as ApiErrorResponse | null;
 
+    const nestedError = errorBody?.error;
+
     throw new ApiError(
-      errorBody?.message ??
+      nestedError?.message ??
+        errorBody?.message ??
         "An unexpected API error occurred.",
       response.status,
-      errorBody?.code,
-      errorBody?.details
+      nestedError?.code ?? errorBody?.code,
+      nestedError?.details ?? errorBody?.details
     );
   }
 

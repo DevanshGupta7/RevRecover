@@ -11,6 +11,41 @@ npm run build
 
 
 
+
+3. ACTION_SEND_EMAIL
+ACTION_SEND_EMAIL = "SEND_EMAIL"
+
+Meaning:
+
+Send the customer an email related to the recovery.
+
+For example:
+
+Payment failed
+      ↓
+AI decides:
+SEND_EMAIL
+      ↓
+Send email:
+"Your payment could not be completed.
+Please update your payment method."
+
+This could eventually integrate with:
+
+Resend
+SendGrid
+AWS SES
+another email provider
+
+But you don't necessarily need to fully implement this for your MVP.
+
+The important thing is that your architecture has a place for this action.
+
+
+
+
+
+
 Part 12 — Frontend polish + shared UX
 
 Before touching FastAPI, we'll make the current frontend more production-ready:
