@@ -38,7 +38,10 @@ def evaluate_eligibility(
         "bank_decline",
     }
 
-    if not analysis.retryable and analysis.failure_type not in RECOVERABLE_WITH_PAYMENT_LINK:
+    if (
+        not analysis.retryable
+        and analysis.failure_type not in RECOVERABLE_WITH_PAYMENT_LINK
+    ):
         return EligibilityResult(
             eligible=False,
             reason=(

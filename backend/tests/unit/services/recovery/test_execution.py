@@ -1,7 +1,7 @@
 from decimal import Decimal
 from types import SimpleNamespace
-from uuid import uuid4
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 from app.models.payment import Payment
 from app.models.recovery import RecoveryAction, RecoveryCase
@@ -60,6 +60,7 @@ def test_execute_recovery_action_creates_payment_link_and_updates_state(monkeypa
         create_payment_link=lambda **kwargs: {
             "id": "plink_test_123",
             "short_url": "https://rzp.io/i/test123",
+            "reference_id": f"RR-{recovery_case_id}",
         }
     )
 
@@ -75,6 +76,7 @@ def test_execute_recovery_action_creates_payment_link_and_updates_state(monkeypa
     assert result.result_data == {
         "payment_link_id": "plink_test_123",
         "short_url": "https://rzp.io/i/test123",
+        "reference_id": f"RR-{recovery_case_id}",
     }
     assert recovery_case.status == "waiting"
     assert recovery_case.current_step == "payment_link_created"

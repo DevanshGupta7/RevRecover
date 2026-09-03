@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-5-nano"
 
+    RESEND_API_KEY: str | None = None
+    RECOVERY_EMAIL_FROM: str | None = None
+    RESEND_API_URL: str = "https://api.resend.com/emails"
+    EMAIL_ENABLED: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

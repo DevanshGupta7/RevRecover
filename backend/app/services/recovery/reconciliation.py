@@ -35,7 +35,8 @@ def _payment_link_action_for_event(
     db: Session,
     *,
     organisation_id: UUID,
-    payment_link_id: str,
+    payment_link_id: str | None,
+    order_id: str | None = None,
 ) -> tuple[RecoveryCase, RecoveryAction] | None:
     actions = (
         db.query(RecoveryAction, RecoveryCase)
@@ -45,13 +46,23 @@ def _payment_link_action_for_event(
         )
         .filter(
             RecoveryCase.organisation_id == organisation_id,
-            RecoveryAction.action_type == "CREATE_PAYMENT_LINK",
+            RecoveryAction.action_type.in_(["CREATE_PAYMENT_LINK", "RETRY_PAYMENT"]),
         )
         .all()
     )
 
     for action, recovery_case in actions:
-        if (action.result_data or {}).get("payment_link_id") == payment_link_id:
+        result_data = action.result_data or {}
+        if (
+            action.action_type == "CREATE_PAYMENT_LINK"
+            and result_data.get("payment_link_id") == payment_link_id
+        ) or (
+            action.action_type == "RETRY_PAYMENT"
+            and (
+                result_data.get("order_id") == order_id
+                or result_data.get("payment_link_id") == payment_link_id
+            )
+        ):
             return recovery_case, action
 
     return None
@@ -69,13 +80,14 @@ def record_payment_link_payment_event(
     recovery action, allowing ordinary provider payments to use the generic
     payment processor.
     """
-    if not parsed_event.payment_link_id:
+    if not parsed_event.payment_link_id and not parsed_event.order_id:
         return False
 
     match = _payment_link_action_for_event(
         db,
         organisation_id=organisation_id,
         payment_link_id=parsed_event.payment_link_id,
+        order_id=parsed_event.order_id,
     )
     if match is None:
         return False
@@ -94,6 +106,7 @@ def record_payment_link_payment_event(
                 payment_link_id=parsed_event.payment_link_id,
                 reference_id=None,
                 payment_id=parsed_event.payment_id,
+                order_id=parsed_event.order_id,
                 amount_subunits=parsed_event.amount_subunits,
                 currency=parsed_event.currency,
                 provider_created_at=parsed_event.provider_created_at,
@@ -132,7 +145,9 @@ def record_payment_link_payment_event(
         db.add(
             PaymentAttempt(
                 payment_id=payment.id,
-                attempt_number=1 if last_attempt is None else last_attempt.attempt_number + 1,
+                attempt_number=1
+                if last_attempt is None
+                else last_attempt.attempt_number + 1,
                 status=parsed_event.payment_status or parsed_event.event_type,
                 provider_event_id=parsed_event.provider_event_id,
                 provider_attempt_id=parsed_event.payment_id,
@@ -141,6 +156,38 @@ def record_payment_link_payment_event(
                 attempted_at=parsed_event.provider_created_at,
             )
         )
+        db.flush()
+
+    recovery_action = (
+        db.query(RecoveryAction)
+        .filter(RecoveryAction.id == _recovery_action.id)
+        .first()
+    )
+    if recovery_action is not None:
+        recovery_action.result_data = {
+            **(recovery_action.result_data or {}),
+            "last_payment_status": parsed_event.payment_status or "failed",
+            "last_failure_reason": parsed_event.failure_reason,
+            "last_failure_code": parsed_event.failure_code,
+        }
+        latest_attempt_number = (
+            db.query(PaymentAttempt)
+            .filter(PaymentAttempt.payment_id == payment.id)
+            .order_by(PaymentAttempt.attempt_number.desc())
+            .first()
+        )
+        attempts_exhausted = (
+            latest_attempt_number is not None
+            and latest_attempt_number.attempt_number >= recovery_case.max_attempts
+        )
+        recovery_case.current_step = (
+            "recovery_attempts_exhausted"
+            if attempts_exhausted
+            else "payment_link_payment_failed"
+        )
+        recovery_case.status = "failed" if attempts_exhausted else "waiting"
+        if attempts_exhausted:
+            recovery_case.stopped_at = datetime.now(timezone.utc)
         db.flush()
 
     return True
@@ -226,7 +273,7 @@ def reconcile_successful_payment_link(
         db.query(RecoveryAction)
         .filter(
             RecoveryAction.recovery_case_id == recovery_case.id,
-            RecoveryAction.action_type == "CREATE_PAYMENT_LINK",
+            RecoveryAction.action_type.in_(["CREATE_PAYMENT_LINK", "RETRY_PAYMENT"]),
         )
         .order_by(RecoveryAction.step_number.desc())
         .first()
@@ -242,13 +289,9 @@ def reconcile_successful_payment_link(
     # ---------------------------------------------------------
 
     if parsed_event.amount_subunits is None:
-        raise ValueError(
-            "Successful Payment Link event does not contain an amount."
-        )
+        raise ValueError("Successful Payment Link event does not contain an amount.")
 
-    recovered_amount = (
-        Decimal(parsed_event.amount_subunits) / Decimal(100)
-    )
+    recovered_amount = Decimal(parsed_event.amount_subunits) / Decimal(100)
 
     # ---------------------------------------------------------
     # 6. Validate amount against original payment
@@ -263,9 +306,7 @@ def reconcile_successful_payment_link(
             recovered_amount,
         )
 
-        raise ValueError(
-            "Recovered amount does not match the original payment amount."
-        )
+        raise ValueError("Recovered amount does not match the original payment amount.")
 
     # ---------------------------------------------------------
     # 7. Update ORIGINAL Payment
@@ -295,14 +336,12 @@ def reconcile_successful_payment_link(
             db.query(PaymentAttempt)
             .filter(
                 PaymentAttempt.payment_id == payment.id,
-                PaymentAttempt.provider_event_id
-                == parsed_event.provider_event_id,
+                PaymentAttempt.provider_event_id == parsed_event.provider_event_id,
             )
             .first()
         )
 
     if existing_payment_attempt is None:
-
         last_attempt = (
             db.query(PaymentAttempt)
             .filter(
@@ -312,11 +351,7 @@ def reconcile_successful_payment_link(
             .first()
         )
 
-        attempt_number = (
-            1
-            if last_attempt is None
-            else last_attempt.attempt_number + 1
-        )
+        attempt_number = 1 if last_attempt is None else last_attempt.attempt_number + 1
 
         payment_attempt = PaymentAttempt(
             payment_id=payment.id,
@@ -326,10 +361,7 @@ def reconcile_successful_payment_link(
             provider_attempt_id=parsed_event.payment_id,
             failure_reason=None,
             failure_code=None,
-            attempted_at=(
-                parsed_event.provider_created_at
-                or now
-            ),
+            attempted_at=(parsed_event.provider_created_at or now),
         )
 
         db.add(payment_attempt)
@@ -349,23 +381,17 @@ def reconcile_successful_payment_link(
     )
 
     if existing_recovery_attempt is None:
-
         previous_attempt = (
             db.query(RecoveryAttempt)
             .filter(
-                RecoveryAttempt.recovery_case_id
-                == recovery_case.id,
+                RecoveryAttempt.recovery_case_id == recovery_case.id,
             )
-            .order_by(
-                RecoveryAttempt.attempt_number.desc()
-            )
+            .order_by(RecoveryAttempt.attempt_number.desc())
             .first()
         )
 
         attempt_number = (
-            1
-            if previous_attempt is None
-            else previous_attempt.attempt_number + 1
+            1 if previous_attempt is None else previous_attempt.attempt_number + 1
         )
 
         recovery_attempt = RecoveryAttempt(
@@ -375,10 +401,7 @@ def reconcile_successful_payment_link(
             channel="payment_link",
             status="successful",
             error_message=None,
-            attempted_at=(
-                parsed_event.provider_created_at
-                or now
-            ),
+            attempted_at=(parsed_event.provider_created_at or now),
         )
 
         db.add(recovery_attempt)
@@ -390,10 +413,7 @@ def reconcile_successful_payment_link(
 
     recovery_action.status = "executed"
 
-    recovery_action.executed_at = (
-        parsed_event.provider_created_at
-        or now
-    )
+    recovery_action.executed_at = parsed_event.provider_created_at or now
 
     # ---------------------------------------------------------
     # 11. Store successful payment information
@@ -406,10 +426,7 @@ def reconcile_successful_payment_link(
         "recovered_payment_id": parsed_event.payment_id,
         "recovered_event_id": parsed_event.provider_event_id,
         "recovered_amount": str(recovered_amount),
-        "recovered_at": (
-            parsed_event.provider_created_at
-            or now
-        ).isoformat(),
+        "recovered_at": (parsed_event.provider_created_at or now).isoformat(),
     }
 
     # ---------------------------------------------------------
@@ -419,17 +436,11 @@ def reconcile_successful_payment_link(
     recovery_case.status = "recovered"
     recovery_case.current_step = "payment_recovered"
 
-    recovery_case.recovered_at = (
-        parsed_event.provider_created_at
-        or now
-    )
+    recovery_case.recovered_at = parsed_event.provider_created_at or now
 
     recovery_case.recovered_amount = recovered_amount
 
-    recovery_case.stopped_at = (
-        parsed_event.provider_created_at
-        or now
-    )
+    recovery_case.stopped_at = parsed_event.provider_created_at or now
 
     db.flush()
 

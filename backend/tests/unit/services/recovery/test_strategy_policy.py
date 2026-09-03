@@ -4,6 +4,7 @@ from app.models.recovery import RecoveryPolicy
 from app.services.recovery.constants import (
     ACTION_HUMAN_APPROVAL,
     ACTION_RETRY_PAYMENT,
+    ACTION_SEND_EMAIL,
 )
 from app.services.recovery.policy import validate_strategy
 from app.services.recovery.strategy import RecoveryStrategy, select_strategy
@@ -95,6 +96,32 @@ def test_select_strategy_sets_human_approval_when_requested():
         recommended_delay_hours=2,
         requires_human_approval=True,
         allowed_channels=["email"],
+    )
+
+    assert strategy.action_type == ACTION_HUMAN_APPROVAL
+    assert strategy.requires_human_approval is True
+
+
+def test_select_strategy_maps_payment_reminder_to_email():
+    strategy = select_strategy(
+        failure_type="unknown",
+        recommended_action="SEND_PAYMENT_REMINDER",
+        recommended_delay_hours=None,
+        requires_human_approval=False,
+        allowed_channels=["email"],
+    )
+
+    assert strategy.action_type == ACTION_SEND_EMAIL
+    assert strategy.channel == "email"
+
+
+def test_select_strategy_maps_escalation_to_human_approval():
+    strategy = select_strategy(
+        failure_type="unknown",
+        recommended_action="ESCALATE",
+        recommended_delay_hours=None,
+        requires_human_approval=False,
+        allowed_channels=[],
     )
 
     assert strategy.action_type == ACTION_HUMAN_APPROVAL

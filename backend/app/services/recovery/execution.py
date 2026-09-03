@@ -11,16 +11,24 @@ must never pretend that a payment succeeded.
 
 import logging
 from datetime import datetime, timezone
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ConflictException, ResourceNotFoundException
+from app.core.exceptions import (
+    CommunicationException,
+    ConflictException,
+    ResourceNotFoundException,
+)
+from app.integrations.email.exceptions import (
+    EmailConfigurationException,
+    EmailDeliveryException,
+)
 from app.integrations.razorpay.client import RazorpayClient
 from app.integrations.razorpay.service import RazorpayService
 from app.models.customer import Customer
 from app.models.payment import Payment
 from app.models.recovery import RecoveryAction, RecoveryCase
+from app.services.recovery.email import execute_send_email
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +76,7 @@ def execute_create_payment_link(
     )
 
     razorpay = get_razorpay_service()
-    
+
     reference_id = f"RR-{recovery_case.id}"
 
     result = razorpay.create_payment_link(
@@ -135,21 +143,28 @@ def execute_retry_payment(
 
     razorpay = get_razorpay_service()
 
-    result = razorpay.create_order(
+    result = razorpay.create_payment_link(
         amount=int(payment.amount * 100),
         currency=payment.currency,
-        receipt=str(recovery_case.id),
+        reference_id=f"RR-{recovery_case.id}",
+        description=f"RevRecover recovery for payment {payment.id}",
     )
 
     recovery_action.status = "executed"
     recovery_action.executed_at = datetime.now(timezone.utc)
     recovery_case.status = "waiting"
-    recovery_case.current_step = "retry_order_created"
+    recovery_case.current_step = "payment_link_created"
+
+    recovery_action.result_data = {
+        "payment_link_id": result.get("id"),
+        "short_url": result.get("short_url"),
+        "reference_id": result.get("reference_id", f"RR-{recovery_case.id}"),
+    }
 
     db.flush()
 
     logger.info(
-        "Recovery retry order created | case_id=%s payment_id=%s order_id=%s",
+        "Recovery retry payment link created | case_id=%s payment_id=%s link_id=%s",
         recovery_case.id,
         payment.id,
         result.get("id"),
@@ -197,16 +212,45 @@ def execute_recovery_action(
             recovery_case=recovery_case,
             recovery_action=recovery_action,
         )
-        recovery_action.result_data = {
+        recovery_action.result_data = recovery_action.result_data or {
             "order_id": result.get("id"),
             "amount": result.get("amount"),
             "currency": result.get("currency"),
         }
 
+    elif recovery_action.action_type == "SEND_EMAIL":
+        try:
+            result = execute_send_email(
+                db=db,
+                recovery_case=recovery_case,
+                recovery_action=recovery_action,
+            )
+        except (EmailConfigurationException, EmailDeliveryException) as error:
+            recovery_action.status = "failed"
+            recovery_case.status = "failed"
+            recovery_case.current_step = "email_delivery"
+            db.flush()
+            db.commit()
+            if isinstance(error, EmailConfigurationException):
+                message = (
+                    "Email recovery is not configured. Set EMAIL_ENABLED=true, "
+                    "RESEND_API_KEY, and RECOVERY_EMAIL_FROM in backend/.env, "
+                    "then restart the backend."
+                )
+            else:
+                message = str(error)
+            raise CommunicationException(message=message) from error
+
+        recovery_action.status = "executed"
+        recovery_action.executed_at = datetime.now(timezone.utc)
+        recovery_action.result_data = result
+        recovery_case.status = "waiting"
+        recovery_case.current_step = "customer_contacted"
+
     elif recovery_action.action_type == "HUMAN_APPROVAL":
-        recovery_case.status = "awaiting_approval"
-        recovery_case.current_step = "human_approval"
-        recovery_action.status = "planned"
+        raise ConflictException(
+            message="Recovery action requires human approval first."
+        )
 
     elif recovery_action.action_type == "STOP":
         recovery_case.status = "stopped"
@@ -216,5 +260,44 @@ def execute_recovery_action(
     else:
         raise ValueError(f"Unsupported recovery action: {recovery_action.action_type}")
 
+    db.flush()
+    return recovery_action
+
+
+def approve_recovery_action(
+    db: Session,
+    recovery_case: RecoveryCase,
+    recovery_action: RecoveryAction,
+) -> RecoveryAction:
+    """Approve a gated action and make its intended action executable."""
+
+    if recovery_action.action_type != "HUMAN_APPROVAL":
+        raise ConflictException(message="Recovery action does not require approval.")
+
+    if (
+        recovery_action.status != "planned"
+        or recovery_case.status != "awaiting_approval"
+    ):
+        raise ConflictException(message="Recovery action is not awaiting approval.")
+
+    approved_action = (recovery_action.result_data or {}).get("approved_action")
+    if approved_action == "HUMAN_APPROVAL":
+        approved_action = {
+            "insufficient_funds": "RETRY_PAYMENT",
+            "temporary_failure": "RETRY_PAYMENT",
+            "expired_card": "CREATE_PAYMENT_LINK",
+            "bank_decline": "CREATE_PAYMENT_LINK",
+        }.get(recovery_case.risk_type)
+    if approved_action not in {"CREATE_PAYMENT_LINK", "RETRY_PAYMENT", "STOP"}:
+        raise ConflictException(
+            message="No executable action is available for approval."
+        )
+
+    recovery_action.action_type = approved_action
+    recovery_action.result_data = None
+    recovery_case.status = "planned" if approved_action != "STOP" else "stopped"
+    recovery_case.current_step = (
+        "execute_recovery" if approved_action != "STOP" else "stopped"
+    )
     db.flush()
     return recovery_action

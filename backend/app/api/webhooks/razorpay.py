@@ -156,7 +156,11 @@ async def razorpay_webhook(
             db.commit()
 
         else:
-            if event_type in {"payment.authorized", "payment.captured"}:
+            if event_type in {
+                "payment.authorized",
+                "payment.captured",
+                "payment.failed",
+            }:
                 handled_as_recovery = record_payment_link_payment_event(
                     db=db,
                     organisation_id=organisation.id,
@@ -208,8 +212,7 @@ async def razorpay_webhook(
         db.rollback()
 
         logger.exception(
-            "Failed to process Razorpay payment event | "
-            "event_id=%s event=%s",
+            "Failed to process Razorpay payment event | event_id=%s event=%s",
             provider_event_id,
             event_type,
         )

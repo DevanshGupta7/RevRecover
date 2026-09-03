@@ -168,7 +168,12 @@ export function RecoveryDecision({
           )}
 
           {error && (
-            <p className="mt-3 text-sm text-red-400">{error}</p>
+            <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+              <p className="text-sm font-medium text-red-300">
+                Recovery cannot be started
+              </p>
+              <p className="mt-1 text-sm text-red-400">{error}</p>
+            </div>
           )}
 
           {result && (

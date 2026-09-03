@@ -70,6 +70,14 @@ export async function executeRecoveryAction(
   );
 }
 
+export async function approveRecoveryAction(
+  actionId: string
+): Promise<ApiRecoveryAction> {
+  return api.post<ApiRecoveryAction>(
+    `/recovery/actions/${actionId}/approve`
+  );
+}
+
 function toNumber(value: number | string | null | undefined) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -89,6 +97,8 @@ function mapRecoveryStatus(
       return "retrying";
     case "recovered":
       return "recovered";
+    case "awaiting_approval":
+      return "awaiting_approval";
     case "failed":
       return "failed";
     case "cancelled":

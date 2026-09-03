@@ -33,6 +33,16 @@ def get_payments(
 
     query = db.query(Payment).filter(Payment.organisation_id == organisation_id)
 
+    duplicate_recovery_payment = (
+        db.query(PaymentAttempt)
+        .filter(
+            PaymentAttempt.provider_attempt_id == Payment.provider_payment_id,
+            PaymentAttempt.payment_id != Payment.id,
+        )
+        .exists()
+    )
+    query = query.filter(~duplicate_recovery_payment)
+
     if status:
         query = query.filter(Payment.status == status)
 
@@ -120,6 +130,16 @@ def get_customer_payments(
     query = db.query(Payment).filter(
         Payment.organisation_id == organisation_id, Payment.customer_id == customer_id
     )
+
+    duplicate_recovery_payment = (
+        db.query(PaymentAttempt)
+        .filter(
+            PaymentAttempt.provider_attempt_id == Payment.provider_payment_id,
+            PaymentAttempt.payment_id != Payment.id,
+        )
+        .exists()
+    )
+    query = query.filter(~duplicate_recovery_payment)
 
     total = query.with_entities(func.count(Payment.id)).scalar() or 0
 

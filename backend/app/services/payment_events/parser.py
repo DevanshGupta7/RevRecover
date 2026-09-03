@@ -19,7 +19,7 @@ class ParsedPaymentEvent:
     event_type: str
     provider_event_id: str
     provider_account_id: str | None
-    
+
     reference_id: str | None
     payment_link_id: str | None
 
@@ -38,17 +38,19 @@ class ParsedPaymentEvent:
     customer_name: str | None
     customer_email: str | None
     customer_phone: str | None
-    
+
+
 @dataclass(frozen=True)
 class ParsedPaymentLinkEvent:
     event_type: str
     provider_event_id: str
     provider_account_id: str | None
 
-    payment_link_id: str
+    payment_link_id: str | None
     reference_id: str | None
 
     payment_id: str | None
+    order_id: str | None
     amount_subunits: int | None
     currency: str | None
 
@@ -114,6 +116,9 @@ def parse_payment_event(*, payload: dict, provider_event_id: str) -> ParsedPayme
 
     description = payment.get("description")
     payment_link_id = None
+    raw_payment_link_id = payment.get("payment_link_id")
+    if isinstance(raw_payment_link_id, str) and raw_payment_link_id:
+        payment_link_id = raw_payment_link_id
     if isinstance(description, str) and description.startswith("#"):
         payment_link_id = f"plink_{description[1:]}"
 
@@ -131,11 +136,11 @@ def parse_payment_event(*, payload: dict, provider_event_id: str) -> ParsedPayme
         amount_subunits=payment.get("amount"),
         currency=payment.get("currency"),
         payment_status=payment.get("status"),
-        failure_reason=error.get("description"),
-        failure_code=error.get("code"),
+        failure_reason=(error.get("description") or payment.get("error_description")),
+        failure_code=error.get("code") or payment.get("error_code"),
         provider_created_at=parse_provider_timestamp(payload.get("created_at")),
     )
-    
+
 
 def parse_payment_link_event(
     *,
@@ -145,21 +150,16 @@ def parse_payment_link_event(
     event_type = payload.get("event")
 
     if event_type != "payment_link.paid":
-        raise ValueError(
-            f"Unsupported payment link event: {event_type}"
-        )
+        raise ValueError(f"Unsupported payment link event: {event_type}")
 
     account_id = payload.get("account_id")
 
-    payment_link_wrapper = (
-        payload.get("payload", {})
-        .get("payment_link", {})
-    )
+    payment_link_wrapper = payload.get("payload", {}).get("payment_link", {})
 
     payment_link = payment_link_wrapper.get("entity", {})
 
     if not isinstance(payment_link, dict):
-        raise ValueError("Payment Link entity is missing.")
+        raise TypeError("Payment Link entity is missing.")
 
     payment_link_id = payment_link.get("id")
 
@@ -168,10 +168,7 @@ def parse_payment_link_event(
 
     reference_id = payment_link.get("reference_id")
 
-    payment_wrapper = (
-        payload.get("payload", {})
-        .get("payment", {})
-    )
+    payment_wrapper = payload.get("payload", {}).get("payment", {})
 
     payment = payment_wrapper.get("entity", {})
 
@@ -185,9 +182,8 @@ def parse_payment_link_event(
         payment_link_id=payment_link_id,
         reference_id=reference_id,
         payment_id=payment.get("id"),
+        order_id=payment.get("order_id"),
         amount_subunits=payment.get("amount"),
         currency=payment.get("currency"),
-        provider_created_at=parse_provider_timestamp(
-            payload.get("created_at")
-        ),
+        provider_created_at=parse_provider_timestamp(payload.get("created_at")),
     )

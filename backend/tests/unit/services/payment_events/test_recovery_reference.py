@@ -18,6 +18,4 @@ def test_recovery_reference_round_trips_with_emitted_format():
 def test_legacy_colon_recovery_reference_remains_supported():
     recovery_case_id = uuid4()
 
-    assert recovery_case_id_from_reference(
-        f"RR:{recovery_case_id}"
-    ) == recovery_case_id
+    assert recovery_case_id_from_reference(f"RR:{recovery_case_id}") == recovery_case_id

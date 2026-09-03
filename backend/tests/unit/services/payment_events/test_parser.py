@@ -62,6 +62,55 @@ def test_parse_payment_captured_payment_link_marker():
     assert event.payment_link_id == "plink_TWqM4IpsTN6E0e"
 
 
+def test_parse_payment_captured_payment_link_id_field():
+    payload = {
+        "account_id": "acc_test",
+        "event": "payment.captured",
+        "created_at": 1700000000,
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_link_payment",
+                    "payment_link_id": "plink_test",
+                    "amount": 300000,
+                    "currency": "INR",
+                    "status": "captured",
+                }
+            }
+        },
+    }
+
+    event = parse_payment_event(payload=payload, provider_event_id="evt_test")
+
+    assert event.payment_link_id == "plink_test"
+
+
+def test_parse_payment_failed_top_level_error_fields():
+    payload = {
+        "account_id": "acc_test",
+        "event": "payment.failed",
+        "created_at": 1700000000,
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": "pay_test",
+                    "description": "#plink_test",
+                    "amount": 450000,
+                    "currency": "INR",
+                    "status": "failed",
+                    "error_code": "BANK_DECLINE",
+                    "error_description": "Bank Decline",
+                }
+            }
+        },
+    }
+
+    event = parse_payment_event(payload=payload, provider_event_id="evt_test")
+
+    assert event.failure_code == "BANK_DECLINE"
+    assert event.failure_reason == "Bank Decline"
+
+
 def test_unsupported_event_is_rejected():
     payload = {
         "account_id": "acc_test",

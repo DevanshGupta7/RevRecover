@@ -165,6 +165,15 @@ class PolicyViolationException(RevRecoverException):
         )
 
 
+class PaymentNotEligibleException(RevRecoverException):
+    """Raised when a payment cannot enter the recovery workflow."""
+
+    def __init__(self, message: str = "Payment is not eligible for recovery"):
+        super().__init__(
+            message=message, status_code=422, error_code="PAYMENT_NOT_ELIGIBLE"
+        )
+
+
 class AIException(RevRecoverException):
     """
     Raised when an AI operation fails.

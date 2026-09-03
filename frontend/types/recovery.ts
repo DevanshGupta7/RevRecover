@@ -1,5 +1,6 @@
 export type RecoveryCaseStatus =
   | "waiting"
+  | "awaiting_approval"
   | "scheduled"
   | "contacted"
   | "retrying"

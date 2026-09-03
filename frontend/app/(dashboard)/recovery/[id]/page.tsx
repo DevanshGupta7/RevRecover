@@ -66,6 +66,22 @@ export default function RecoveryDetailsPage() {
     loadRecoveryCase();
   }, [id]);
 
+  useEffect(() => {
+    if (!id || recoveryCase?.status !== "waiting") {
+      return;
+    }
+
+    const interval = window.setInterval(async () => {
+      const data = await getRecoveryCaseById(id);
+
+      if (data) {
+        setRecoveryCase(data);
+      }
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [id, recoveryCase?.status]);
+
   async function reloadRecoveryCase() {
     const data = await getRecoveryCaseById(id);
 

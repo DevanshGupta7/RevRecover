@@ -20,7 +20,7 @@ def recovery_case_id_from_reference(
 
     if not reference_id:
         raise ValueError("Recovery reference ID is missing.")
-    
+
     reference_id = reference_id.strip()
 
     if reference_id.startswith(("RR-", "RR:")):
@@ -31,6 +31,4 @@ def recovery_case_id_from_reference(
     try:
         return UUID(raw_uuid)
     except ValueError as exc:
-        raise ValueError(
-            "Invalid recovery case ID in reference."
-        ) from exc
+        raise ValueError("Invalid recovery case ID in reference.") from exc

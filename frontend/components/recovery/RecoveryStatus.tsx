@@ -28,6 +28,13 @@ const STATUS_CONFIG: Record<
       "border-amber-500/20 bg-amber-500/10 text-amber-400",
   },
 
+  awaiting_approval: {
+    label: "Approval Required",
+    icon: Clock3,
+    className:
+      "border-amber-500/20 bg-amber-500/10 text-amber-300",
+  },
+
   scheduled: {
     label: "Scheduled",
     icon: Clock3,

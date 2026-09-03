@@ -11,10 +11,18 @@ from app.api.recovery.schemas import (
     RecoveryCaseResponse,
     RecoveryProcessResponse,
 )
-from app.core.exceptions import ResourceNotFoundException, ValidationException
+from app.core.exceptions import (
+    PaymentNotEligibleException,
+    ResourceNotFoundException,
+    ValidationException,
+)
 from app.db.database import get_db
-from app.services.recovery.execution import execute_recovery_action
+from app.services.recovery.execution import (
+    approve_recovery_action,
+    execute_recovery_action,
+)
 from app.services.recovery.repository import (
+    get_active_policy,
     get_ai_decision,
     get_payment_for_organisation,
     get_recovery_action,
@@ -152,6 +160,40 @@ def execute_recovery_action_endpoint(
 
 
 @router.post(
+    "/actions/{recovery_action_id}/approve",
+    response_model=RecoveryActionResponse,
+)
+def approve_recovery_action_endpoint(
+    recovery_action_id: UUID,
+    current_user: Annotated[tuple, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    _, membership = current_user
+
+    recovery_action = get_recovery_action(
+        db=db,
+        recovery_action_id=recovery_action_id,
+        organisation_id=membership.organisation_id,
+    )
+    if recovery_action is None:
+        raise ResourceNotFoundException(message="Recovery action not found.")
+
+    recovery_case = get_recovery_case(
+        db=db,
+        recovery_case_id=recovery_action.recovery_case_id,
+        organisation_id=membership.organisation_id,
+    )
+    if recovery_case is None:
+        raise ResourceNotFoundException(message="Recovery case not found.")
+
+    result = approve_recovery_action(
+        db=db, recovery_case=recovery_case, recovery_action=recovery_action
+    )
+    db.commit()
+    return result
+
+
+@router.post(
     "/payments/{payment_id}/process",
     response_model=RecoveryProcessResponse,
     status_code=status.HTTP_201_CREATED,
@@ -196,6 +238,19 @@ def process_payment_recovery(
     if payment.status != "failed":
         raise ValidationException(
             message="Recovery can only be started for failed payments."
+        )
+
+    policy = get_active_policy(db=db, organisation_id=membership.organisation_id)
+    if (
+        policy is not None
+        and policy.max_recovery_amount is not None
+        and payment.amount > policy.max_recovery_amount
+    ):
+        raise PaymentNotEligibleException(
+            message=(
+                f"This payment is ₹{payment.amount:,.0f}, but your recovery policy "
+                f"allows payments up to ₹{policy.max_recovery_amount:,.0f}."
+            )
         )
 
     result = RecoveryService().process_payment(

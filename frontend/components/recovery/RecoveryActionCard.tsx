@@ -1,11 +1,14 @@
 "use client";
 
-import { CheckCircle2, ExternalLink, LoaderCircle, Play } from "lucide-react";
+import { CheckCircle2, ExternalLink, LoaderCircle, Play, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { executeRecoveryAction } from "@/services/recovery.service";
+import {
+  approveRecoveryAction,
+  executeRecoveryAction,
+} from "@/services/recovery.service";
 import type { RecoveryAction, RecoveryCaseStatus } from "@/types/recovery";
 
 interface RecoveryActionCardProps {
@@ -32,7 +35,7 @@ function executionStatusLabel(
     }
 
     if (actionType === "RETRY_PAYMENT") {
-      return "Retry executed";
+      return "Waiting for payment";
     }
   }
 
@@ -47,9 +50,24 @@ export function RecoveryActionCard({
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canExecute = action?.status === "planned" &&
+    action.actionType !== "HUMAN_APPROVAL" &&
     !["recovered", "stopped", "failed"].includes(caseStatus);
-  const shortUrl = action?.resultData?.short_url;
-  const isPaymentLink = action?.actionType === "CREATE_PAYMENT_LINK";
+  const requiresApproval = action?.actionType === "HUMAN_APPROVAL" &&
+    caseStatus === "awaiting_approval";
+  const shortUrl = typeof action?.resultData?.short_url === "string"
+    ? action.resultData.short_url
+    : null;
+  const orderId = typeof action?.resultData?.order_id === "string"
+    ? action.resultData.order_id
+    : null;
+  const lastPaymentStatus = typeof action?.resultData?.last_payment_status === "string"
+    ? action.resultData.last_payment_status
+    : null;
+  const lastFailureReason = typeof action?.resultData?.last_failure_reason === "string"
+    ? action.resultData.last_failure_reason
+    : null;
+  const isPaymentLink = Boolean(shortUrl);
+  const isRetryOrder = action?.actionType === "RETRY_PAYMENT";
 
   if (!action) {
     return null;
@@ -75,12 +93,32 @@ export function RecoveryActionCard({
     }
   }
 
+  async function handleApprove() {
+    setExecuting(true);
+    setError(null);
+
+    try {
+      await approveRecoveryAction(recoveryAction.id);
+      await onExecuted();
+    } catch (approveError) {
+      setError(
+        approveError instanceof Error
+          ? approveError.message
+          : "Unable to approve recovery action."
+      );
+    } finally {
+      setExecuting(false);
+    }
+  }
+
   return (
     <Card className="border-zinc-800 bg-zinc-950 shadow-none">
       <CardHeader className="border-b border-zinc-800 p-5">
         <h2 className="text-sm font-medium text-zinc-100">Recovery Action</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          Execute the approved recovery action when it is ready.
+          {requiresApproval
+            ? "A human must approve this recovery before execution."
+            : "Execute the approved recovery action when it is ready."}
         </p>
       </CardHeader>
 
@@ -91,6 +129,33 @@ export function RecoveryActionCard({
             {actionLabel(action.actionType)}
           </p>
         </div>
+
+        {requiresApproval && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-amber-300">
+              <ShieldCheck className="h-4 w-4" />
+              Human Approval Required
+            </div>
+            <p className="mt-2 text-xs text-zinc-500">
+              Approving this action will make the planned recovery executable.
+            </p>
+          </div>
+        )}
+
+        {requiresApproval && (
+          <Button
+            className="w-full"
+            disabled={executing}
+            onClick={handleApprove}
+          >
+            {executing ? (
+              <LoaderCircle className="animate-spin" />
+            ) : (
+              <ShieldCheck />
+            )}
+            {executing ? "Approving..." : "Approve Recovery"}
+          </Button>
+        )}
 
         <div>
           <p className="text-xs text-zinc-500">Status</p>
@@ -116,6 +181,38 @@ export function RecoveryActionCard({
             )}
             {executing ? "Executing..." : "Execute Recovery"}
           </Button>
+        )}
+
+        {action.status === "executed" && isRetryOrder && orderId && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="text-sm font-medium text-amber-300">
+              Payment Link Created
+            </div>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">
+              The customer must complete this Razorpay payment. Recovery will
+              update after the payment webhook is received.
+            </p>
+            <p className="mt-3 break-all font-mono text-xs text-zinc-300">
+              {orderId}
+            </p>
+          </div>
+        )}
+
+        {action.status === "executed" && lastPaymentStatus === "failed" && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+            <div className="text-sm font-medium text-red-300">
+              Latest payment attempt failed
+            </div>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">
+              The payment link is still available. The customer can try again,
+              or you can choose another recovery action.
+            </p>
+            {lastFailureReason && (
+              <p className="mt-2 text-xs text-red-400">
+                Reason: {lastFailureReason}
+              </p>
+            )}
+          </div>
         )}
 
         {action.status === "executed" && isPaymentLink && shortUrl && (
