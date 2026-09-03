@@ -23,6 +23,7 @@ from app.models.recovery import (
     RecoveryAttempt,
     RecoveryCase,
 )
+from app.services.audit import record_audit_event
 from app.services.payment_events.parser import (
     ParsedPaymentEvent,
     ParsedPaymentLinkEvent,
@@ -441,6 +442,20 @@ def reconcile_successful_payment_link(
     recovery_case.recovered_amount = recovered_amount
 
     recovery_case.stopped_at = parsed_event.provider_created_at or now
+
+    record_audit_event(
+        db,
+        organisation_id,
+        event_type="recovery_case_recovered",
+        event_name="Recovery case recovered",
+        actor="System",
+        entity_type="recovery",
+        entity_id=str(recovery_case.id),
+        result="success",
+        description="A verified payment webhook confirmed successful recovery.",
+        action="Recovery completed",
+        metadata_json={"recovered_amount": str(recovered_amount)},
+    )
 
     db.flush()
 

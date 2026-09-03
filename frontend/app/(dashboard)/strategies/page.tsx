@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import {
   BrainCircuit,
   GitBranch,
@@ -6,10 +10,32 @@ import {
 import { StrategyCard } from "@/components/strategies/StrategyCard";
 
 import { getStrategyData } from "@/services/strategy.service";
+import type { StrategyData } from "@/types/strategy";
 
 export default function StrategiesPage() {
-  const { strategies } = getStrategyData();
+  const [data, setData] = useState<StrategyData>({ strategies: [] });
 
+  useEffect(() => {
+    let active = true;
+
+    getStrategyData()
+      .then((result) => {
+        if (active) {
+          setData(result);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setData({ strategies: [] });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const { strategies } = data;
   return (
     <div className="min-h-full">
       <div className="mx-auto w-full max-w-[1400px] p-5 md:p-8">

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Activity,
   Bot,
@@ -7,10 +9,23 @@ import {
 
 import { AuditExplorer } from "@/components/audit/AuditExplorer";
 
+import { useEffect, useState } from "react";
+
 import { getAuditData } from "@/services/audit.service";
+import type { AuditData } from "@/types/audit";
 
 export default function AuditPage() {
-  const auditData = getAuditData();
+  const [auditData, setAuditData] = useState<AuditData | null>(null);
+
+  useEffect(() => {
+    getAuditData()
+      .then(setAuditData)
+      .catch(() => setAuditData(null));
+  }, []);
+
+  if (!auditData) {
+    return <div className="p-8 text-sm text-zinc-500">Loading audit logs...</div>;
+  }
 
   return (
     <div className="min-h-full min-w-0 overflow-x-hidden">

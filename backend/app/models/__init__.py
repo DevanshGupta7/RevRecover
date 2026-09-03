@@ -1,4 +1,5 @@
 from app.models.ai_decision import AIDecision
+from app.models.audit import AuditLog
 from app.models.customer import Customer
 from app.models.organisation import Organisation
 from app.models.organisation_member import OrganisationMember
@@ -15,6 +16,7 @@ from app.models.webhook_event import WebhookEvent
 
 __all__ = [
     "AIDecision",
+    "AuditLog",
     "Customer",
     "IdempotencyKey",
     "Organisation",

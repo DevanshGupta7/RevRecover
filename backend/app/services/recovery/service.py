@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ResourceNotFoundException
+from app.services.audit import record_audit_event
 from app.services.recovery.actions import create_recovery_action
 from app.services.recovery.ai_service import analyze_recovery_case
 from app.services.recovery.constants import ACTION_HUMAN_APPROVAL, ACTION_STOP
@@ -44,6 +45,19 @@ class RecoveryService:
             db.commit()
             return None
 
+        record_audit_event(
+            db,
+            organisation_id,
+            event_type="recovery_case_created",
+            event_name="Recovery case created",
+            actor="System",
+            entity_type="recovery",
+            entity_id=str(recovery_case.id),
+            result="success",
+            description="A recovery case was created for a failed payment.",
+            metadata_json={"payment_id": str(payment_id)},
+        )
+
         recovery_case.status = "analyzing"
         db.flush()
 
@@ -63,6 +77,20 @@ class RecoveryService:
             recommended_delay_hours=ai_decision.recommended_delay_hours,
             requires_human_approval=False,
             allowed_channels=policy.allowed_channels or [],
+        )
+
+        record_audit_event(
+            db,
+            organisation_id,
+            event_type="strategy_selected",
+            event_name="Recovery strategy selected",
+            actor="System",
+            entity_type="recovery",
+            entity_id=str(recovery_case.id),
+            result="success",
+            description="The recovery engine selected a deterministic strategy.",
+            action=strategy.action_type,
+            metadata_json={"failure_type": recovery_case.risk_type},
         )
 
         policy_validation = validate_strategy(

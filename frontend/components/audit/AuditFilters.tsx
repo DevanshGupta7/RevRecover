@@ -36,36 +36,32 @@ const EVENT_TYPES: {
   label: string;
 }[] = [
   {
-    value: "payment_analyzed",
-    label: "Payment analyzed",
+    value: "payment_failed",
+    label: "Payment failed",
   },
   {
-    value: "recovery_eligible",
-    label: "Recovery eligible",
+    value: "recovery_case_created",
+    label: "Recovery case created",
+  },
+  {
+    value: "ai_decision_created",
+    label: "AI decision created",
   },
   {
     value: "strategy_selected",
     label: "Strategy selected",
   },
   {
-    value: "customer_contacted",
-    label: "Customer contacted",
+    value: "recovery_action_executed",
+    label: "Recovery action executed",
   },
   {
-    value: "retry_scheduled",
-    label: "Retry scheduled",
+    value: "recovery_action_failed",
+    label: "Recovery action failed",
   },
   {
-    value: "retry_executed",
-    label: "Retry executed",
-  },
-  {
-    value: "payment_recovered",
-    label: "Revenue recovered",
-  },
-  {
-    value: "recovery_failed",
-    label: "Recovery failed",
+    value: "recovery_case_recovered",
+    label: "Recovery case recovered",
   },
 ];
 
