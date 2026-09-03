@@ -81,6 +81,7 @@ function getCustomerRisk(
 
 async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
   // Fetch customer's payment history for aggregates
+  let payments: ApiPayment[] = [];
   let paymentHistory: CustomerPayment[] = [];
   const recoveryHistory: CustomerRecovery[] = [];
   let lifetimeValue = 0;
@@ -89,6 +90,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
   let failedAmount = 0;
   let recoveredRevenue = 0;
   let recoverySuccessRate = 0;
+  let recoveryOpportunityAmount = 0;
   let activeRecoveryCases = 0;
 
   try {
@@ -99,7 +101,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
       )
       .catch(() => ({ items: [], pagination: { total: 0, page: 1, page_size: 50, total_pages: 0 } }));
 
-    const payments = paymentsResponse.items ?? [];
+    payments = paymentsResponse.items ?? [];
     lifetimeValue = payments.reduce(
       (sum, p) => sum + toNumber(p.amount),
       0
@@ -145,6 +147,20 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
       (recoveryCase) => recoveryCase.status === "recovered"
     );
 
+    const recoveryCasePaymentIds = new Set(
+      customerRecoveryCases.map((recoveryCase) => recoveryCase.payment_id)
+    );
+    recoveryOpportunityAmount = customerRecoveryCases.reduce(
+      (sum, recoveryCase) => sum + toNumber(recoveryCase.risk_amount),
+      0
+    ) + payments.reduce(
+      (sum, payment) =>
+        payment.status === "failed" && !recoveryCasePaymentIds.has(payment.id)
+          ? sum + toNumber(payment.amount)
+          : sum,
+      0
+    );
+
     recoveryHistory.push(
       ...customerRecoveryCases.map((recoveryCase) => ({
         id: recoveryCase.id,
@@ -169,8 +185,8 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
         sum + toNumber(recoveryCase.recovered_amount ?? recoveryCase.risk_amount),
       0
     );
-    recoverySuccessRate = customerRecoveryCases.length > 0
-      ? Math.round((recoveredCases.length / customerRecoveryCases.length) * 100)
+    recoverySuccessRate = recoveryOpportunityAmount > 0
+      ? Math.round((recoveredRevenue / recoveryOpportunityAmount) * 100)
       : 0;
     activeRecoveryCases = customerRecoveryCases.filter(
       (recoveryCase) =>

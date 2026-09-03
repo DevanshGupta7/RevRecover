@@ -133,7 +133,7 @@ export default function DashboardPage() {
           />
 
           <MetricCard
-            label="Recovery Rate"
+              label="Revenue Recovery Rate"
             value={`${dashboard.metrics.recoveryRate}%`}
             icon={Percent}
             description="Overall recovery performance"

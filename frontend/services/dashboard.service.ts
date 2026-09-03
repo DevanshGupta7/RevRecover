@@ -50,6 +50,19 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function dateKey(value: string) {
+  return value.slice(0, 10);
+}
+
+function formatChartDate(value: string) {
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export async function getDashboardData(): Promise<DashboardData> {
   try {
     const [failedPaymentsResponse, recoveryCasesResponse] = await Promise.all([
@@ -64,7 +77,17 @@ export async function getDashboardData(): Promise<DashboardData> {
     const failedPayments = failedPaymentsResponse.items ?? [];
     const recoveryCases = recoveryCasesResponse ?? [];
 
-    const revenueAtRisk = failedPayments.reduce(
+    const recoveryCasePaymentIds = new Set(
+      recoveryCases.map((recoveryCase) => recoveryCase.payment_id)
+    );
+    const unrecoveredFailedPayments = failedPayments.filter(
+      (payment) => !recoveryCasePaymentIds.has(payment.id)
+    );
+
+    const totalRecoveryOpportunity = recoveryCases.reduce(
+      (sum, recoveryCase) => sum + toNumber(recoveryCase.risk_amount),
+      0
+    ) + unrecoveredFailedPayments.reduce(
       (sum, payment) => sum + toNumber(payment.amount),
       0
     );
@@ -85,9 +108,64 @@ export async function getDashboardData(): Promise<DashboardData> {
     ).length;
 
     const recoveryRate =
-      revenueAtRisk > 0
-        ? Number(((revenueRecovered / revenueAtRisk) * 100).toFixed(1))
+      totalRecoveryOpportunity > 0
+        ? Number(((revenueRecovered / totalRecoveryOpportunity) * 100).toFixed(1))
         : 0;
+
+    const revenueAtRisk = Math.max(
+      totalRecoveryOpportunity - revenueRecovered,
+      0
+    );
+
+    const timeline = new Map<string, { opportunity: number; recovered: number }>();
+    const addTimelineValue = (
+      date: string,
+      key: "opportunity" | "recovered",
+      amount: number
+    ) => {
+      const point = timeline.get(date) ?? { opportunity: 0, recovered: 0 };
+      point[key] += amount;
+      timeline.set(date, point);
+    };
+
+    recoveryCases.forEach((recoveryCase) => {
+      addTimelineValue(
+        dateKey(recoveryCase.created_at),
+        "opportunity",
+        toNumber(recoveryCase.risk_amount)
+      );
+
+      if (recoveryCase.status === "recovered") {
+        addTimelineValue(
+          dateKey(recoveryCase.recovered_at ?? recoveryCase.updated_at),
+          "recovered",
+          toNumber(recoveryCase.recovered_amount ?? recoveryCase.risk_amount)
+        );
+      }
+    });
+
+    unrecoveredFailedPayments.forEach((payment) => {
+      addTimelineValue(
+        dateKey(payment.created_at),
+        "opportunity",
+        toNumber(payment.amount)
+      );
+    });
+
+    let cumulativeOpportunity = 0;
+    let cumulativeRecovered = 0;
+    const revenueRecovery = Array.from(timeline.entries())
+      .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+      .map(([date, values]) => {
+        cumulativeOpportunity += values.opportunity;
+        cumulativeRecovered += values.recovered;
+
+        return {
+          date: formatChartDate(date),
+          atRisk: Math.max(cumulativeOpportunity - cumulativeRecovered, 0),
+          recovered: cumulativeRecovered,
+        };
+      });
 
     const failureReasons = [
       {
@@ -235,13 +313,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         recoveryRate: recoveryRate,
         activeCases: activeCases,
       },
-      revenueRecovery: [
-        {
-          date: "Today",
-          atRisk: revenueAtRisk,
-          recovered: revenueRecovered,
-        },
-      ],
+      revenueRecovery,
       failureReasons: failureReasons.map((item) => ({
         reason: item.reason,
         percentage: item.percentage,
