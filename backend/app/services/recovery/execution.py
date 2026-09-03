@@ -28,6 +28,7 @@ from app.integrations.razorpay.service import RazorpayService
 from app.models.customer import Customer
 from app.models.payment import Payment
 from app.models.recovery import RecoveryAction, RecoveryCase
+from app.services.audit import record_audit_event
 from app.services.recovery.email import execute_send_email
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,33 @@ def execute_create_payment_link(
         ),
     }
 
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="recovery_action_executed",
+        event_name="Recovery action executed",
+        actor="User",
+        entity_type="recovery_action",
+        entity_id=str(recovery_action.id),
+        result="success",
+        description="A recovery action created a Razorpay Payment Link.",
+        action=recovery_action.action_type,
+        metadata_json={"payment_link_id": result.get("id")},
+    )
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="payment_link_created",
+        event_name="Payment Link created",
+        actor="User",
+        entity_type="recovery",
+        entity_id=str(recovery_case.id),
+        result="success",
+        description="A Razorpay Payment Link was created for recovery.",
+        action="Create payment link",
+        metadata_json={"payment_link_id": result.get("id")},
+    )
+
     db.flush()
 
     logger.info(
@@ -160,6 +188,33 @@ def execute_retry_payment(
         "short_url": result.get("short_url"),
         "reference_id": result.get("reference_id", f"RR-{recovery_case.id}"),
     }
+
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="recovery_action_executed",
+        event_name="Recovery action executed",
+        actor="User",
+        entity_type="recovery_action",
+        entity_id=str(recovery_action.id),
+        result="success",
+        description="A recovery action created a Razorpay Payment Link.",
+        action=recovery_action.action_type,
+        metadata_json={"payment_link_id": result.get("id")},
+    )
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="payment_link_created",
+        event_name="Payment Link created",
+        actor="User",
+        entity_type="recovery",
+        entity_id=str(recovery_case.id),
+        result="success",
+        description="A Razorpay Payment Link was created for recovery.",
+        action="Create payment link",
+        metadata_json={"payment_link_id": result.get("id")},
+    )
 
     db.flush()
 
