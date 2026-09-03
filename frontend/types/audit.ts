@@ -4,14 +4,13 @@ export type AuditActor =
   | "Merchant";
 
 export type AuditEventType =
-  | "payment_analyzed"
-  | "recovery_eligible"
+  | "payment_failed"
+  | "recovery_case_created"
+  | "ai_decision_created"
   | "strategy_selected"
-  | "customer_contacted"
-  | "retry_scheduled"
-  | "retry_executed"
-  | "payment_recovered"
-  | "recovery_failed";
+  | "recovery_action_executed"
+  | "recovery_action_failed"
+  | "recovery_case_recovered";
 
 export type AuditResult =
   | "eligible"

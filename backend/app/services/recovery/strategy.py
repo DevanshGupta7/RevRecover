@@ -33,6 +33,70 @@ class RecoveryStrategy:
     reason: str
 
 
+def get_strategy_definitions() -> list[dict]:
+    """Return the deterministic failure-to-strategy rules used by recovery."""
+
+    return [
+        {
+            "failure_type": "insufficient_funds",
+            "label": "Insufficient funds",
+            "recommended_action": "RETRY_AFTER_DELAY",
+            "action_type": ACTION_RETRY_PAYMENT,
+            "delay_hours": 24,
+            "channel": None,
+            "reason": (
+                "Insufficient funds are potentially recoverable, so the payment "
+                "should be retried after a delay."
+            ),
+        },
+        {
+            "failure_type": "temporary_failure",
+            "label": "Temporary failure",
+            "recommended_action": "RETRY_AFTER_DELAY",
+            "action_type": ACTION_RETRY_PAYMENT,
+            "delay_hours": 2,
+            "channel": None,
+            "reason": (
+                "The failure appears temporary, so the payment should be retried "
+                "after a short delay."
+            ),
+        },
+        {
+            "failure_type": "expired_card",
+            "label": "Expired card",
+            "recommended_action": "REQUEST_PAYMENT_METHOD_UPDATE",
+            "action_type": ACTION_CREATE_PAYMENT_LINK,
+            "delay_hours": None,
+            "channel": "email",
+            "reason": (
+                "The payment method cannot be directly retried, so a new payment "
+                "link is recommended."
+            ),
+        },
+        {
+            "failure_type": "bank_decline",
+            "label": "Bank decline",
+            "recommended_action": "REQUEST_PAYMENT_METHOD_UPDATE",
+            "action_type": ACTION_CREATE_PAYMENT_LINK,
+            "delay_hours": None,
+            "channel": "email",
+            "reason": (
+                "The payment method cannot be directly retried, so a new payment "
+                "link is recommended."
+            ),
+        },
+        {
+            "failure_type": "unknown",
+            "label": "Unknown failure",
+            "recommended_action": "STOP",
+            "action_type": ACTION_STOP,
+            "delay_hours": None,
+            "channel": None,
+            "reason": "No safe recovery strategy is available for this payment.",
+        },
+    ]
+
+
 def select_strategy(
     *,
     failure_type: str,

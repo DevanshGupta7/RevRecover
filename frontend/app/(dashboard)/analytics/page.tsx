@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import {
   Activity,
   Clock3,
@@ -17,6 +21,7 @@ import { RecoveryFunnel } from "@/components/analytics/RecoveryFunnel";
 import { RecoveryOutcomeChart } from "@/components/analytics/RecoveryOutcomeChart";
 
 import { getAnalyticsData } from "@/services/analytics.service";
+import type { AnalyticsData } from "@/types/analytics";
 
 function formatCurrency(amount: number) {
   if (amount >= 10000000) {
@@ -31,7 +36,35 @@ function formatCurrency(amount: number) {
 }
 
 export default function AnalyticsPage() {
-  const analytics = getAnalyticsData();
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    getAnalyticsData()
+      .then((data) => {
+        if (active) setAnalytics(data);
+      })
+      .catch(() => {
+        if (active) setAnalytics(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="p-8 text-sm text-zinc-500">Loading analytics...</div>;
+  }
+
+  if (!analytics) {
+    return <div className="p-8 text-sm text-red-400">Unable to load analytics.</div>;
+  }
 
   const { metrics } = analytics;
 

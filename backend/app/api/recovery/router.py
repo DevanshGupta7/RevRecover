@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.auth.dependencies import get_current_user
@@ -9,7 +10,10 @@ from app.api.recovery.schemas import (
     AIDecisionResponse,
     RecoveryActionResponse,
     RecoveryCaseResponse,
+    RecoveryPolicyResponse,
     RecoveryProcessResponse,
+    RecoveryStrategiesResponse,
+    RecoveryStrategyResponse,
 )
 from app.core.exceptions import (
     PaymentNotEligibleException,
@@ -17,6 +21,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.db.database import get_db
+from app.models.recovery import RecoveryCase
 from app.services.recovery.execution import (
     approve_recovery_action,
     execute_recovery_action,
@@ -32,8 +37,62 @@ from app.services.recovery.repository import (
     get_recovery_cases,
 )
 from app.services.recovery.service import RecoveryService
+from app.services.recovery.strategy import get_strategy_definitions
 
 router = APIRouter(prefix="/recovery", tags=["Recovery"])
+
+
+@router.get("/strategies", response_model=RecoveryStrategiesResponse)
+def get_recovery_strategies_endpoint(
+    current_user: Annotated[tuple, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    _, membership = current_user
+    policy = get_active_policy(db=db, organisation_id=membership.organisation_id)
+
+    definitions = get_strategy_definitions()
+    strategy_responses = []
+    for definition in definitions:
+        case_query = db.query(RecoveryCase).filter(
+            RecoveryCase.organisation_id == membership.organisation_id,
+            RecoveryCase.risk_type == definition["failure_type"],
+        )
+        cases = case_query.count()
+        recovered_cases = case_query.filter(RecoveryCase.status == "recovered")
+        recovered_amount = (
+            recovered_cases.with_entities(
+                func.coalesce(func.sum(RecoveryCase.recovered_amount), 0)
+            ).scalar()
+            or 0
+        )
+        strategy_responses.append(
+            RecoveryStrategyResponse(
+                **definition,
+                cases=cases,
+                recovered_amount=recovered_amount,
+                success_rate=(recovered_cases.count() / cases * 100) if cases else 0,
+            )
+        )
+
+    return RecoveryStrategiesResponse(
+        strategies=strategy_responses,
+        policy=(
+            RecoveryPolicyResponse.model_validate(policy)
+            if policy is not None
+            else RecoveryPolicyResponse(
+                id=None,
+                name=None,
+                max_attempts=None,
+                min_hours_between_attempts=None,
+                max_recovery_amount=None,
+                allowed_channels=[],
+                allow_discount=False,
+                require_approval_above=None,
+                stop_after_success=True,
+                is_active=False,
+            )
+        ),
+    )
 
 
 @router.get("", response_model=list[RecoveryCaseResponse])

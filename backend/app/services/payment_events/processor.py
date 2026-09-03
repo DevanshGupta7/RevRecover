@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 from app.models.payment import Payment, PaymentAttempt
+from app.services.audit import record_audit_event
 from app.services.payment_events.parser import ParsedPaymentEvent
 from app.services.payment_events.status import should_update_payment_status
 
@@ -147,5 +148,22 @@ def process_payment_event(
 
     db.add(attempt)
     db.flush()
+
+    if parsed_event.payment_status == "failed":
+        record_audit_event(
+            db,
+            organisation_id,
+            event_type="payment_failed",
+            event_name="Payment failed",
+            actor="System",
+            entity_type="payment",
+            entity_id=str(payment.id),
+            result="failed",
+            description="A payment provider event reported a failed payment.",
+            metadata_json={
+                "failure_reason": parsed_event.failure_reason,
+                "failure_code": parsed_event.failure_code,
+            },
+        )
 
     return payment

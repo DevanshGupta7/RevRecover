@@ -16,6 +16,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.analytics.router import router as analytics_router
+from app.api.audit.router import router as audit_router
 from app.api.auth.router import router as auth_router
 from app.api.organisations.router import router as organisations_router
 from app.api.payments.router import router as payments_router
@@ -45,6 +47,10 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+
+app.include_router(analytics_router)
+
+app.include_router(audit_router)
 
 app.include_router(organisations_router)
 
