@@ -5,9 +5,15 @@ from uuid import uuid4
 
 from app.models.payment import Payment
 from app.models.recovery import RecoveryAction, RecoveryCase
-from app.services.payment_events.parser import ParsedPaymentEvent
+from app.services.payment_events.parser import (
+    ParsedPaymentEvent,
+    ParsedPaymentLinkEvent,
+)
 from app.services.recovery import execution
-from app.services.recovery.reconciliation import record_payment_link_payment_event
+from app.services.recovery.reconciliation import (
+    reconcile_successful_payment_link,
+    record_payment_link_payment_event,
+)
 
 
 def test_execute_recovery_action_creates_payment_link_and_updates_state(monkeypatch):
@@ -147,7 +153,7 @@ def test_payment_link_execution_records_audit_events(monkeypatch):
     ]
 
 
-def test_payment_captured_does_not_reconcile_payment_link_recovery():
+def test_payment_captured_reconciles_payment_link_recovery(monkeypatch):
     db = MagicMock()
     recovery_case = RecoveryCase(id=uuid4(), organisation_id=uuid4())
     action = RecoveryAction(
@@ -161,6 +167,16 @@ def test_payment_captured_does_not_reconcile_payment_link_recovery():
     action_query.join.return_value = action_query
     action_query.filter.return_value = action_query
     db.query.return_value = action_query
+
+    reconciled = []
+
+    def fake_reconcile(**kwargs):
+        reconciled.append(kwargs)
+
+    monkeypatch.setattr(
+        "app.services.recovery.reconciliation.reconcile_successful_payment_link",
+        fake_reconcile,
+    )
 
     handled = record_payment_link_payment_event(
         db,
@@ -187,3 +203,88 @@ def test_payment_captured_does_not_reconcile_payment_link_recovery():
 
     assert handled is True
     db.add.assert_not_called()
+    assert reconciled[0]["recovery_case_id"] == recovery_case.id
+    assert reconciled[0]["parsed_event"].payment_id == "pay_new"
+
+
+def test_payment_link_paid_reconciles_payment_without_provider_payment_id():
+    db = MagicMock()
+    organisation_id = uuid4()
+    payment_id = uuid4()
+    recovery_case_id = uuid4()
+    action_id = uuid4()
+
+    payment = Payment(
+        id=payment_id,
+        organisation_id=organisation_id,
+        customer_id=uuid4(),
+        amount=Decimal("5000.00"),
+        currency="INR",
+        status="failed",
+        provider="razorpay",
+        provider_payment_id=None,
+    )
+    recovery_case = RecoveryCase(
+        id=recovery_case_id,
+        organisation_id=organisation_id,
+        customer_id=payment.customer_id,
+        payment_id=payment_id,
+        risk_amount=payment.amount,
+        risk_type="insufficient_funds",
+        status="waiting",
+        current_step="payment_link_created",
+    )
+    recovery_action = RecoveryAction(
+        id=action_id,
+        recovery_case_id=recovery_case_id,
+        action_type="CREATE_PAYMENT_LINK",
+        status="executed",
+        step_number=1,
+        result_data={"payment_link_id": "plink_test_123"},
+    )
+
+    recovery_case_query = MagicMock()
+    recovery_case_query.filter.return_value.first.return_value = recovery_case
+    payment_query = MagicMock()
+    payment_query.filter.return_value.first.return_value = payment
+    action_query = MagicMock()
+    action_query.filter.return_value.order_by.return_value.first.return_value = (
+        recovery_action
+    )
+    attempt_query = MagicMock()
+    attempt_query.filter.return_value.first.return_value = None
+    attempt_query.filter.return_value.order_by.return_value.first.return_value = None
+    recovery_attempt_query = MagicMock()
+    recovery_attempt_query.filter.return_value.first.return_value = None
+    recovery_attempt_query.filter.return_value.order_by.return_value.first.return_value = None
+    db.query.side_effect = [
+        recovery_case_query,
+        payment_query,
+        action_query,
+        attempt_query,
+        attempt_query,
+        recovery_attempt_query,
+        recovery_attempt_query,
+    ]
+
+    result = reconcile_successful_payment_link(
+        db,
+        organisation_id=organisation_id,
+        recovery_case_id=recovery_case_id,
+        parsed_event=ParsedPaymentLinkEvent(
+            event_type="payment_link.paid",
+            provider_event_id="evt_paid",
+            provider_account_id="acc_test",
+            payment_link_id="plink_test_123",
+            reference_id=f"RR-{recovery_case_id}",
+            payment_id="pay_new",
+            order_id=None,
+            amount_subunits=500000,
+            currency="INR",
+            provider_created_at=None,
+        ),
+    )
+
+    assert result.status == "recovered"
+    assert payment.status == "captured"
+    assert payment.provider_payment_id is None
