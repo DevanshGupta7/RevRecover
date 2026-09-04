@@ -94,11 +94,11 @@ export default function AnalyticsPage() {
         {/* Revenue metrics */}
         <section className="mb-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AnalyticsMetricCard
-            label="Revenue at Risk"
+            label="Failed Revenue"
             value={formatCurrency(
               metrics.revenueAtRisk
             )}
-            description="Total failed-payment revenue"
+            description="Total failed-payment revenue in scope"
             icon={CircleDollarSign}
           />
 
@@ -136,14 +136,14 @@ export default function AnalyticsPage() {
           <AnalyticsMetricCard
             label="Recovery Rate"
             value={`${metrics.recoveryRate}%`}
-            description="Recovered vs revenue at risk"
+            description="Recovered vs failed revenue"
             icon={Gauge}
           />
 
           <AnalyticsMetricCard
             label="Recovery ROI"
-            value={`${metrics.recoveryRoi}x`}
-            description="Recovered revenue per recovery cost"
+            value={metrics.recoveryRoi > 0 ? `${metrics.recoveryRoi}x` : "N/A"}
+            description={metrics.recoveryRoi > 0 ? "Recovered revenue per recovery cost" : "Recovery cost data unavailable"}
             icon={TrendingUp}
           />
 

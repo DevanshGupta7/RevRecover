@@ -16,7 +16,7 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <div className="flex min-h-48 items-center justify-center rounded-xl border border-red-500/10 bg-zinc-950 p-6">
+    <div className="flex min-h-48 items-center justify-center rounded-xl border border-red-400/20 bg-[#211918] p-6" role="alert">
       <div className="max-w-md text-center">
         <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10">
           <AlertCircle className="h-4 w-4 text-red-400" />
@@ -26,7 +26,7 @@ export function ErrorState({
           {title}
         </h3>
 
-        <p className="mt-1 text-xs leading-5 text-zinc-600">
+        <p className="mt-1 text-xs leading-5 text-zinc-400">
           {message}
         </p>
 

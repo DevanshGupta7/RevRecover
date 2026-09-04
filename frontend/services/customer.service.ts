@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { normalizePercentage } from "@/lib/recovery-formatters";
 
 import type {
   ApiPaginatedResponse,
@@ -44,6 +45,10 @@ type ApiRecoveryCase = {
   customer_id: string;
   payment_id: string;
   risk_amount: number | string;
+  risk_type?: string | null;
+  failure_reason?: string | null;
+  failure_code?: string | null;
+  recovery_probability?: number | string | null;
   status: string;
   recovered_amount?: number | string | null;
   created_at: string;
@@ -77,6 +82,31 @@ function getCustomerRisk(
   }
 
   return "low";
+}
+
+function getStrategyLabel(
+  failureReason?: string | null,
+  failureCode?: string | null
+) {
+  const value = `${failureReason ?? ""} ${failureCode ?? ""}`.toLowerCase();
+
+  if (value.includes("expired") || value.includes("card_expired")) {
+    return "Request payment method update";
+  }
+
+  if (value.includes("bank")) {
+    return "Alternate payment method";
+  }
+
+  if (value.includes("insufficient")) {
+    return "Retry after delay";
+  }
+
+  if (value.includes("technical") || value.includes("temporary") || value.includes("processing")) {
+    return "Retry after delay";
+  }
+
+  return "Manual review";
 }
 
 async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
@@ -166,7 +196,10 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
         id: recoveryCase.id,
         paymentId: recoveryCase.payment_id,
         amount: toNumber(recoveryCase.risk_amount),
-        strategy: "Recovery workflow",
+        strategy: getStrategyLabel(
+          recoveryCase.failure_reason,
+          recoveryCase.failure_code
+        ),
         status: (
           recoveryCase.status === "recovered"
             ? "recovered"
@@ -174,7 +207,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
               ? "failed"
               : "waiting"
         ) as CustomerRecoveryStatus,
-        probability: 0,
+        probability: normalizePercentage(recoveryCase.recovery_probability),
         recoveredAmount: toNumber(recoveryCase.recovered_amount),
         createdAt: recoveryCase.created_at,
       }))
@@ -207,7 +240,7 @@ async function mapCustomerToUI(customer: ApiCustomer): Promise<Customer> {
     recoveredRevenue,
     recoverySuccessRate,
     risk: getCustomerRisk(failedAmount, lifetimeValue),
-    preferredStrategy: "Retry after delay",
+    preferredStrategy: recoveryHistory[0]?.strategy ?? "Not enough recovery history",
     averagePaymentAmount:
       successfulPayments > 0
         ? Math.floor(lifetimeValue / successfulPayments)

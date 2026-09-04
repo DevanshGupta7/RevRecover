@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: #101416;
+  --foreground: #f4f7f5;
+  --card: #161e27;
+  --card-foreground: #f4f7f5;
+  --popover: #1d2935;
+  --popover-foreground: #f4f7f5;
+  --primary: #8dd8ff;
+  --primary-foreground: #07151d;
+  --secondary: #202a35;
+  --secondary-foreground: #e2edf3;
+  --muted: #1d2833;
+  --muted-foreground: #97a7b2;
+  --accent: #3099c7;
+  --accent-foreground: #f1fbff;
+  --destructive: #f27b72;
+  --border: #2b3942;
+  --input: #2b3942;
+  --ring: #70c8f0;
+  --radius: 0.75rem;
 }
 
 * {
@@ -11,13 +28,17 @@
 
 html {
   background: var(--background);
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
-  background: var(--background);
+  background: linear-gradient(115deg, #090f16 0%, #101a25 48%, #1a2a3b 100%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -28,5 +49,61 @@ select {
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(141, 216, 255, 0.22);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #101416;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #344140;
+  border-radius: 999px;
+}
+
+@layer utilities {
+  .app-surface {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .dashboard-background {
+    background:
+      radial-gradient(circle at 92% 0%, rgba(100, 178, 216, 0.14), transparent 27rem),
+      linear-gradient(115deg, #090f16 0%, #101a25 48%, #1a2a3b 100%);
+  }
+
+  .page-container {
+    width: min(100%, 1440px);
+    margin-inline: auto;
+    padding: 28px clamp(16px, 3vw, 40px) 48px;
+  }
+
+  .bg-zinc-950 {
+    background-color: #101416;
+  }
+
+  .bg-zinc-900 {
+    background-color: #1b2733;
+  }
+
+  .border-zinc-800 {
+    border-color: #2b3942;
+  }
+
+  .text-zinc-500,
+  .text-zinc-600 {
+    color: #97a7b2;
+  }
 }

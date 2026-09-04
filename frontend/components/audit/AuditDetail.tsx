@@ -9,23 +9,25 @@ import {
 } from "lucide-react";
 
 import { AuditStatus } from "@/components/audit/AuditStatus";
+import { formatPercentage, normalizePercentage } from "@/lib/recovery-formatters";
 
-import type { AuditEvent } from "@/types/audit";
+import type { AuditActor, AuditEvent } from "@/types/audit";
 
 interface AuditDetailProps {
   event: AuditEvent;
 }
 
-const ACTOR_ICONS = {
+const ACTOR_ICONS: Record<AuditActor, typeof Bot> = {
   "AI Agent": Bot,
   System: Cog,
   Merchant: UserRound,
+  User: UserRound,
 };
 
 export function AuditDetail({
   event,
 }: AuditDetailProps) {
-  const ActorIcon = ACTOR_ICONS[event.actor];
+  const ActorIcon = ACTOR_ICONS[event.actor] ?? UserRound;
 
   return (
     <div className="space-y-6">
@@ -167,7 +169,7 @@ export function AuditDetail({
             </div>
 
             <span className="text-lg font-semibold text-zinc-100">
-              {event.confidence}%
+              {formatPercentage(event.confidence)}
             </span>
           </div>
 
@@ -175,7 +177,7 @@ export function AuditDetail({
             <div
               className="h-full rounded-full bg-emerald-400"
               style={{
-                width: `${event.confidence}%`,
+                width: `${normalizePercentage(event.confidence)}%`,
               }}
             />
           </div>

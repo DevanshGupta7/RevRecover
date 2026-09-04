@@ -31,8 +31,13 @@ def get_analytics_overview(db: Session, organisation_id: UUID) -> dict:
         .scalar()
     )
     failed_payment_count = failed_payments.count()
+    failed_revenue = failed_payments.with_entities(
+        func.coalesce(func.sum(Payment.amount), 0)
+    ).scalar()
     case_count = cases.count()
-    recovery_rate = (_money(recovered) / _money(risk) * 100) if risk else 0
+    recovery_rate = (
+        (_money(recovered) / _money(failed_revenue) * 100) if failed_revenue else 0
+    )
 
     outcome_rows = (
         cases.with_entities(RecoveryCase.status, func.count(RecoveryCase.id))
@@ -156,10 +161,10 @@ def get_analytics_overview(db: Session, organisation_id: UUID) -> dict:
 
     return {
         "metrics": {
-            "revenueAtRisk": _money(risk),
+            "revenueAtRisk": _money(failed_revenue),
             "eligibleRevenue": _money(risk),
             "recoveredRevenue": _money(recovered),
-            "unrecoverableRevenue": max(_money(risk) - _money(recovered), 0),
+            "unrecoverableRevenue": max(_money(failed_revenue) - _money(recovered), 0),
             "recoveryRate": round(recovery_rate, 1),
             "recoveryRoi": 0,
             "averageRecoveryTime": "-",

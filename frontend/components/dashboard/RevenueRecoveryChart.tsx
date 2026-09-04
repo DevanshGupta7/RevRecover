@@ -45,7 +45,7 @@ export function RevenueRecoveryChart({
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#27272a"
+            stroke="#2b3942"
             vertical={false}
           />
 
@@ -54,7 +54,7 @@ export function RevenueRecoveryChart({
             axisLine={false}
             tickLine={false}
             tick={{
-              fill: "#71717a",
+              fill: "#97a7b2",
               fontSize: 11,
             }}
           />
@@ -64,7 +64,7 @@ export function RevenueRecoveryChart({
             tickLine={false}
             width={52}
             tick={{
-              fill: "#71717a",
+              fill: "#97a7b2",
               fontSize: 11,
             }}
             tickFormatter={formatCurrency}
@@ -72,13 +72,13 @@ export function RevenueRecoveryChart({
 
           <RechartsTooltip
             contentStyle={{
-              backgroundColor: "#09090b",
-              border: "1px solid #27272a",
+              backgroundColor: "#171f25",
+              border: "1px solid #2b3942",
               borderRadius: "8px",
               color: "#fafafa",
             }}
             labelStyle={{
-              color: "#a1a1aa",
+              color: "#c1d0d8",
             }}
             formatter={(value) => [
               formatCurrency(Number(value)),
@@ -89,7 +89,7 @@ export function RevenueRecoveryChart({
             type="stepAfter"
             dataKey="atRisk"
             name="At Risk"
-            stroke="#a1a1aa"
+            stroke="#d49a73"
             strokeWidth={2}
             dot={false}
             activeDot={{
@@ -101,7 +101,7 @@ export function RevenueRecoveryChart({
             type="stepAfter"
             dataKey="recovered"
             name="Recovered"
-            stroke="#fafafa"
+            stroke="#8dd8ff"
             strokeWidth={2}
             dot={false}
             activeDot={{

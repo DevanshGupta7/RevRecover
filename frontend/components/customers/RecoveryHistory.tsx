@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { RecoveryStatus } from "@/components/recovery/RecoveryStatus";
+import { formatPercentage } from "@/lib/recovery-formatters";
 
 import type {
   CustomerRecovery,
@@ -82,7 +83,7 @@ export function RecoveryHistory({
                 </td>
 
                 <td className="px-4 py-3 text-sm text-zinc-300">
-                  {recovery.probability}%
+                  {formatPercentage(recovery.probability)}
                 </td>
 
                 <td className="px-4 py-3 text-sm text-emerald-400">

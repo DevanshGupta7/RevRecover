@@ -8,6 +8,7 @@ from app.models.ai_decision import AIDecision
 from app.models.payment import Payment
 from app.models.recovery import RecoveryCase
 from app.services.ai.openai_provider import OpenAIRecoveryProvider
+from app.services.audit import record_audit_event
 from app.services.recovery.context import build_ai_context
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,29 @@ def analyze_recovery_case(
     recovery_case.current_step = "policy_validation"
 
     db.flush()
+
+    record_audit_event(
+        db,
+        recovery_case.organisation_id,
+        event_type="ai_decision_created",
+        event_name="AI recovery decision created",
+        actor="AI Agent",
+        entity_type="recovery",
+        entity_id=str(recovery_case.id),
+        result="success",
+        description="The AI recovery engine analyzed the payment and recommended a recovery action.",
+        decision=decision.recommended_action,
+        reason=decision.reasoning_summary,
+        action=decision.recommended_action,
+        confidence=round(float(decision.confidence) * 100)
+        if 0 <= float(decision.confidence) <= 1
+        else round(float(decision.confidence)),
+        metadata_json={
+            "provider": "openai",
+            "model": settings.OPENAI_MODEL,
+            "requires_human_approval": decision.requires_human_approval,
+        },
+    )
 
     logger.info(
         "AI recovery decision created | case_id=%s action=%s",

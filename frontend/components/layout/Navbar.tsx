@@ -79,7 +79,7 @@ export function Navbar({
     .toUpperCase() || "RR";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-950/95 px-4 backdrop-blur md:px-6">
+    <header className="sticky top-0 z-30 flex h-[76px] shrink-0 items-center justify-between border-b border-[var(--border)] bg-[#0d151d]/88 px-4 backdrop-blur-xl md:px-8">
       {/* Left side */}
       <div className="flex min-w-0 items-center gap-3">
         {/* Mobile menu */}
@@ -107,14 +107,14 @@ export function Navbar({
           <PanelLeft className="h-4 w-4" />
         </Button>
 
-        <div className="h-5 w-px bg-zinc-800" />
+        <div className="h-5 w-px bg-[var(--border)]" />
 
         <div className="min-w-0">
-          <h1 className="truncate text-sm font-medium text-zinc-100">
+          <h1 className="truncate text-sm font-semibold tracking-tight text-zinc-100">
             {pageTitle}
           </h1>
 
-          <p className="hidden text-xs text-zinc-500 sm:block">
+          <p className="hidden text-xs text-[#81918a] sm:block">
             Revenue recovery intelligence
           </p>
         </div>
@@ -123,32 +123,45 @@ export function Navbar({
       {/* Right side */}
       <div className="flex items-center gap-1">
         {/* Notifications */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="relative text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="relative text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
 
-          <span
-            className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-zinc-100"
-            aria-hidden="true"
-          />
-        </Button>
+              <span
+                className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#f4b183]"
+                aria-hidden="true"
+              />
+            </Button>
+          </DropdownMenuTrigger>
 
-        <div className="mx-2 hidden h-6 w-px bg-zinc-800 sm:block" />
+          <DropdownMenuContent align="end" className="w-64 border-[var(--border)] bg-[var(--popover)] text-zinc-200">
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-[var(--border)]" />
+            <DropdownMenuItem className="cursor-default text-xs text-[var(--muted-foreground)] focus:bg-transparent">
+              No new notifications
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="mx-3 hidden h-7 w-px bg-[var(--border)] sm:block" />
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-9 gap-2 px-2 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+              className="h-10 gap-2 rounded-lg border border-transparent px-2.5 text-zinc-300 hover:border-[var(--border)] hover:bg-[#1d2935] hover:text-zinc-100"
             >
               <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-zinc-800 text-xs text-zinc-200">
+                <AvatarFallback className="border border-[#526b7b] bg-[#253746] text-xs text-zinc-100">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
@@ -164,20 +177,28 @@ export function Navbar({
 
           <DropdownMenuContent
             align="end"
-            className="w-52 border-zinc-800 bg-zinc-950 text-zinc-200"
+            className="w-64 border-[var(--border)] bg-[var(--popover)] p-1.5 text-zinc-200 shadow-2xl shadow-black/25"
           >
-            <DropdownMenuLabel>
-              {user ? user.email : "Account"}
+            <DropdownMenuLabel className="px-3 py-2.5">
+              <span className="block text-xs font-medium text-zinc-100">
+                {user?.full_name ?? "RevRecover User"}
+              </span>
+              <span className="mt-0.5 block text-[11px] font-normal text-[var(--muted-foreground)]">
+                {user?.email ?? "Account"}
+              </span>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator className="bg-zinc-800" />
 
-            <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900">
+            <DropdownMenuItem
+              className="cursor-pointer rounded-md px-3 focus:bg-[#2a3942]"
+              onSelect={() => router.push("/settings")}
+            >
               Profile
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              className="cursor-pointer focus:bg-zinc-900"
+              className="cursor-pointer rounded-md px-3 focus:bg-[#2a3942]"
               onSelect={() => router.push("/settings")}
             >
               Settings
@@ -186,7 +207,7 @@ export function Navbar({
             <DropdownMenuSeparator className="bg-zinc-800" />
 
             <DropdownMenuItem
-              className="cursor-pointer text-zinc-400 focus:bg-zinc-900 focus:text-zinc-100"
+              className="cursor-pointer rounded-md text-zinc-400 focus:bg-[#2a3942] focus:text-zinc-100"
               onSelect={handleLogout}
             >
               Sign out

@@ -1,14 +1,17 @@
 export type AuditActor =
   | "AI Agent"
   | "System"
-  | "Merchant";
+  | "Merchant"
+  | "User";
 
 export type AuditEventType =
   | "payment_failed"
   | "recovery_case_created"
   | "ai_decision_created"
   | "strategy_selected"
+  | "recovery_action_planned"
   | "recovery_action_executed"
+  | "payment_link_created"
   | "recovery_action_failed"
   | "recovery_case_recovered";
 

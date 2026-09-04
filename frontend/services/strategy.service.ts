@@ -36,7 +36,7 @@ function toStrategy(strategy: ApiStrategy): RecoveryStrategy {
         ? "update_payment_method"
         : "manual_review",
     description: strategy.reason,
-    action: `${delay}${strategy.action_type}`,
+    action: `${delay}${strategy.action_type === "CREATE_PAYMENT_LINK" ? "Create Payment Link" : strategy.action_type === "RETRY_PAYMENT" ? "Retry Payment" : "Manual Review"}`,
     status: "active",
     applicableFailureReasons: [strategy.label],
     stats: {

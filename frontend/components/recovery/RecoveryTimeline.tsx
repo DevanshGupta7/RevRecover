@@ -27,6 +27,8 @@ const EVENT_ICONS: Record<
   analyzed: BrainCircuit,
   eligible: ShieldCheck,
   strategy_selected: BrainCircuit,
+  recovery_action: RotateCcw,
+  payment_link_created: CreditCard,
   customer_contacted: Mail,
   retry_scheduled: Clock3,
   payment_recovered: CreditCard,

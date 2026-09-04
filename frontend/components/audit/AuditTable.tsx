@@ -17,7 +17,7 @@ import {
 
 import { AuditStatus } from "@/components/audit/AuditStatus";
 
-import type { AuditEvent } from "@/types/audit";
+import type { AuditActor, AuditEvent } from "@/types/audit";
 
 interface AuditTableProps {
   events: AuditEvent[];
@@ -38,10 +38,11 @@ function formatDate(timestamp: string) {
   }).format(new Date(timestamp));
 }
 
-const ACTOR_ICONS = {
+const ACTOR_ICONS: Record<AuditActor, typeof Bot> = {
   "AI Agent": Bot,
   System: Cog,
   Merchant: UserRound,
+  User: UserRound,
 };
 
 export function AuditTable({
@@ -79,8 +80,7 @@ export function AuditTable({
 
           <TableBody>
             {events.map((event) => {
-              const ActorIcon =
-                ACTOR_ICONS[event.actor];
+              const ActorIcon = ACTOR_ICONS[event.actor] ?? UserRound;
 
               return (
                 <TableRow

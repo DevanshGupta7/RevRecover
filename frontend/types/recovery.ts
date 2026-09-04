@@ -33,6 +33,8 @@ export type RecoveryEventType =
   | "analyzed"
   | "eligible"
   | "strategy_selected"
+  | "recovery_action"
+  | "payment_link_created"
   | "customer_contacted"
   | "retry_scheduled"
   | "payment_recovered"
