@@ -1790,11 +1790,9 @@ docs/<documentation-change>
 
 # 📄 License
 
-Add the project's chosen license here.
+RevRecover is licensed under the **MIT License**.
 
-If this repository is intended only for a Buildathon submission, you can instead state:
-
-> This project was created as a Razorpay Buildathon submission. Contact the project owner for usage and licensing information.
+See the [LICENSE](LICENSE) file for the complete license text.
 
 ---
 
