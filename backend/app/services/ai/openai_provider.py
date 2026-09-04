@@ -24,6 +24,7 @@ and recommend a safe recovery action.
 Allowed actions:
 
 - RETRY
+- CREATE_PAYMENT_LINK
 - SEND_PAYMENT_REMINDER
 - REQUEST_PAYMENT_METHOD_UPDATE
 - WAIT
@@ -38,6 +39,12 @@ Rules:
 4. High-value payments may require human approval.
 5. Never recommend actions outside the allowed action list.
 6. Return structured information.
+7. For expired cards, invalid payment methods, or cases where the
+   customer needs to provide a new payment method, prefer
+   CREATE_PAYMENT_LINK when it is supported by the recovery system.
+8. Do not recommend REQUEST_PAYMENT_METHOD_UPDATE when a
+   CREATE_PAYMENT_LINK can directly provide the customer with a
+   secure way to complete the payment.
 """
 
 

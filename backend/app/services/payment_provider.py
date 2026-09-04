@@ -15,6 +15,17 @@ class PaymentProvider(ABC):
         """Fetch a provider payment."""
 
     @abstractmethod
+    def get_payments(
+        self,
+        *,
+        count: int = 100,
+        skip: int = 0,
+        from_timestamp: int | None = None,
+        to_timestamp: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fetch a page of provider payments."""
+
+    @abstractmethod
     def create_payment_link(
         self,
         *,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -15,14 +15,29 @@ interface DashboardShellProps {
   children: React.ReactNode;
 }
 
+const SIDEBAR_STORAGE_KEY = "revrecover.sidebar-collapsed";
+const subscribeToSidebarPreference = () => () => undefined;
+const getSidebarPreference = () =>
+  window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
+const getServerSidebarPreference = () => false;
+
 export function DashboardShell({
   children,
 }: DashboardShellProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const storedSidebarCollapsed = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarPreference,
+    getServerSidebarPreference
+  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(storedSidebarCollapsed);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleSidebar = () => {
-    setSidebarCollapsed((current) => !current);
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -44,7 +59,7 @@ export function DashboardShell({
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -58,7 +73,7 @@ export function DashboardShell({
       >
         <SheetContent
           side="left"
-          className="w-[280px] border-zinc-800 bg-zinc-950 p-0 text-zinc-100"
+          className="w-[280px] border-[var(--border)] bg-[var(--background)] p-0 text-[var(--foreground)]"
         >
           <SheetTitle className="sr-only">
             Navigation menu
@@ -84,7 +99,7 @@ export function DashboardShell({
           onSidebarToggle={toggleSidebar}
         />
 
-        <main className="min-w-0 flex-1">
+        <main className="dashboard-background min-w-0 flex-1">
           {children}
         </main>
       </div>

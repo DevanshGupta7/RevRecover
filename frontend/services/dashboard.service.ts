@@ -84,7 +84,7 @@ function getFailureCategory(payment: ApiPayment) {
   if (failure.includes("insufficient")) return "insufficient_funds";
   if (failure.includes("expired")) return "expired_card";
   if (failure.includes("bank")) return "bank_decline";
-  if (failure.includes("technical") || failure.includes("network") || failure.includes("gateway")) {
+  if (failure.includes("technical") || failure.includes("temporary") || failure.includes("network") || failure.includes("gateway")) {
     return "technical_error";
   }
   return "other";

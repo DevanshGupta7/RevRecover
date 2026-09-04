@@ -19,9 +19,11 @@ export async function getAuditData(): Promise<AuditData> {
 
   return {
     totalEvents: response.pagination.total,
-    aiDecisions: events.filter((event) => event.actor === "AI Agent").length,
-    automatedActions: events.filter((event) => event.actor === "System").length,
-    successfulActions: events.filter((event) => event.result === "success").length,
+    aiDecisions: events.filter((event) => event.eventType === "ai_decision_created").length,
+    automatedActions: events.filter((event) => event.eventType === "recovery_action_executed").length,
+    successfulActions: events.filter(
+      (event) => event.eventType === "recovery_action_executed" && event.result === "success"
+    ).length,
     events,
   };
 }

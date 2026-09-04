@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { normalizePercentage } from "@/lib/recovery-formatters";
 
 import type {
   RecoveryCase,
@@ -141,10 +142,11 @@ function mapRecoveryStrategy(
 }
 
 function mapRecoveryTimeline(
-  recoveryCase: ApiRecoveryCase
+  recoveryCase: ApiRecoveryCase,
+  action?: ApiRecoveryAction
 ): RecoveryTimelineEvent[] {
   const currentStatus = mapRecoveryStatus(recoveryCase.status);
-  const events = [
+  const events: RecoveryTimelineEvent[] = [
     {
       id: `${recoveryCase.id}-failed`,
       type: "payment_failed",
@@ -179,48 +181,44 @@ function mapRecoveryTimeline(
       timestamp: recoveryCase.created_at,
       status: "completed",
     },
-    {
-      id: `${recoveryCase.id}-contacted`,
-      type: "customer_contacted",
-      title: "Customer Contacted",
-      description: "The customer was notified about the recovery action.",
-      timestamp: recoveryCase.updated_at,
-      status:
-        currentStatus === "waiting" ||
-        currentStatus === "scheduled" ||
-        currentStatus === "contacted"
-          ? "current"
-          : "completed",
-    },
-    {
-      id: `${recoveryCase.id}-retry`,
-      type: "retry_scheduled",
-      title: "Retry Scheduled",
-      description: "A retry or follow-up action was scheduled.",
-      timestamp: recoveryCase.updated_at,
-      status:
-        currentStatus === "retrying" ||
-        currentStatus === "scheduled"
-          ? "current"
-          : currentStatus === "recovered"
-            ? "completed"
-            : "upcoming",
-    },
-    {
+  ];
+
+  if (action) {
+    const isPaymentLink = action.action_type === "CREATE_PAYMENT_LINK";
+    const actionExecuted = action.status === "executed";
+    events.push({
+      id: `${recoveryCase.id}-action`,
+      type: isPaymentLink ? "payment_link_created" : "recovery_action",
+      title: isPaymentLink ? "Payment Link Created" : "Recovery Action Scheduled",
+      description: isPaymentLink
+        ? "A secure payment link was created for the customer to complete payment."
+        : "The selected recovery action was scheduled by the recovery workflow.",
+      timestamp: action.executed_at ?? action.planned_at ?? recoveryCase.updated_at,
+      status: currentStatus === "recovered" || actionExecuted ? "completed" : "current",
+    });
+  }
+
+  if (currentStatus === "recovered") {
+    events.push({
       id: `${recoveryCase.id}-recovered`,
       type: "payment_recovered",
       title: "Payment Recovered",
-      description: "The payment outcome was finalized.",
-      timestamp:
-        recoveryCase.recovered_at ?? "",
-      status:
-        currentStatus === "recovered"
-          ? "completed"
-          : "upcoming",
-    },
-  ];
+      description: "The customer completed payment and the recovery was finalized.",
+      timestamp: recoveryCase.recovered_at ?? recoveryCase.updated_at,
+      status: "completed",
+    });
+  } else if (currentStatus === "failed") {
+    events.push({
+      id: `${recoveryCase.id}-failed-recovery`,
+      type: "recovery_failed",
+      title: "Recovery Failed",
+      description: "The recovery workflow ended without recovering the payment.",
+      timestamp: recoveryCase.updated_at,
+      status: "completed",
+    });
+  }
 
-  return events as RecoveryTimelineEvent[];
+  return events;
 }
 
 export async function getRecoveryData(): Promise<RecoveryData> {
@@ -230,7 +228,9 @@ export async function getRecoveryData(): Promise<RecoveryData> {
     });
 
     const cases = await Promise.all(
-      (recoveryCases ?? []).map(mapRecoveryCase)
+      (recoveryCases ?? []).map((recoveryCase) =>
+        mapRecoveryCase(recoveryCase)
+      )
     );
 
     const activeCases = cases.filter(
@@ -273,7 +273,8 @@ export async function getRecoveryData(): Promise<RecoveryData> {
 }
 
 async function mapRecoveryCase(
-  recoveryCase: ApiRecoveryCase
+  recoveryCase: ApiRecoveryCase,
+  action?: ApiRecoveryAction
 ): Promise<RecoveryCase> {
   const customer = await api
     .get<{ id: string; name?: string | null; email?: string | null }>(
@@ -282,7 +283,7 @@ async function mapRecoveryCase(
     .catch(() => null);
 
   const amount = toNumber(recoveryCase.risk_amount);
-  const probability = toNumber(
+  const probability = normalizePercentage(
     recoveryCase.recovery_probability
   );
 
@@ -305,16 +306,14 @@ async function mapRecoveryCase(
       recoveryCase.failure_code
     ),
     status,
-    recoveryProbability: Number.isFinite(probability)
-      ? probability
-      : 0,
+    recoveryProbability: probability,
     expectedRecovery: toNumber(
       recoveryCase.recovered_amount ?? recoveryCase.risk_amount
     ),
     createdAt: recoveryCase.created_at,
     updatedAt: recoveryCase.updated_at,
     attemptNumber: recoveryCase.max_attempts,
-    timeline: mapRecoveryTimeline(recoveryCase),
+    timeline: mapRecoveryTimeline(recoveryCase, action),
   };
 }
 
@@ -331,8 +330,8 @@ export async function getRecoveryCaseById(
       ),
     ]);
 
-    const mappedCase = await mapRecoveryCase(recoveryCase);
     const action = actions[0];
+    const mappedCase = await mapRecoveryCase(recoveryCase, action);
 
     return {
       ...mappedCase,

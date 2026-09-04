@@ -7,6 +7,12 @@ from app.models.payment import Payment
 from app.models.recovery import RecoveryAction, RecoveryCase
 
 
+def confidence_percentage(value) -> int:
+    numeric_value = float(value or 0)
+    percentage = numeric_value * 100 if 0 <= numeric_value <= 1 else numeric_value
+    return max(0, min(100, round(percentage)))
+
+
 def exists(db, event_type: str, entity_type: str, entity_id: str) -> bool:
     return (
         db.query(AuditLog.id)
@@ -98,8 +104,13 @@ def backfill() -> int:
                 description="An AI recovery recommendation was recorded for the case.",
                 decision=decision.recommended_action,
                 reason=decision.reasoning_summary,
-                confidence=int(decision.confidence),
-                metadata_json={"diagnosis": decision.diagnosis},
+                confidence=confidence_percentage(decision.confidence),
+                action=decision.recommended_action,
+                metadata_json={
+                    "diagnosis": decision.diagnosis,
+                    "provider": decision.provider,
+                    "model": decision.model,
+                },
             )
 
         actions = (

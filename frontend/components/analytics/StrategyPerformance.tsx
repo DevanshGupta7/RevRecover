@@ -19,6 +19,17 @@ function formatCurrency(amount: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
+function formatStrategyName(strategy: string) {
+  if (strategy === "CREATE_PAYMENT_LINK") return "Create Payment Link";
+  if (strategy === "RETRY_PAYMENT") return "Retry Payment";
+  if (strategy === "HUMAN_APPROVAL") return "Human Approval";
+
+  return strategy
+    .split("_")
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function StrategyPerformance({
   data,
 }: StrategyPerformanceProps) {
@@ -35,7 +46,7 @@ export function StrategyPerformance({
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
 
                 <p className="truncate text-xs font-medium text-zinc-300">
-                  {strategy.strategy}
+                  {formatStrategyName(strategy.strategy)}
                 </p>
               </div>
 

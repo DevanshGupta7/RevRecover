@@ -96,8 +96,23 @@ def record_payment_link_payment_event(
     recovery_case, _recovery_action = match
 
     if parsed_event.event_type == "payment.captured":
-        # payment_link.paid is authoritative because it carries the
-        # Payment Link reference used to correlate the recovery case.
+        reconcile_successful_payment_link(
+            db=db,
+            organisation_id=organisation_id,
+            recovery_case_id=recovery_case.id,
+            parsed_event=ParsedPaymentLinkEvent(
+                event_type="payment_link.paid",
+                provider_event_id=parsed_event.provider_event_id,
+                provider_account_id=parsed_event.provider_account_id,
+                payment_link_id=parsed_event.payment_link_id,
+                reference_id=parsed_event.reference_id,
+                payment_id=parsed_event.payment_id,
+                order_id=parsed_event.order_id,
+                amount_subunits=parsed_event.amount_subunits,
+                currency=parsed_event.currency,
+                provider_created_at=parsed_event.provider_created_at,
+            ),
+        )
         return True
 
     payment = (

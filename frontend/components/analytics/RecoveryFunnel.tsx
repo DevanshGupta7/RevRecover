@@ -9,6 +9,16 @@ interface RecoveryFunnelProps {
 export function RecoveryFunnel({
   data,
 }: RecoveryFunnelProps) {
+  if (data.length === 0) {
+    return (
+      <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-zinc-800 px-5 text-center">
+        <p className="max-w-xs text-xs leading-5 text-zinc-500">
+          Recovery funnel data will appear as cases move through the workflow.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {data.map((stage, index) => {

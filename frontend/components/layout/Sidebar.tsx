@@ -35,7 +35,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-zinc-800 bg-zinc-950",
+        "flex h-full flex-col border-r border-[var(--border)] bg-[#0d151d]",
         mobile
           ? "w-full"
           : cn(
@@ -48,7 +48,7 @@ export function Sidebar({
       {/* Brand */}
       <div
         className={cn(
-          "flex h-16 shrink-0 items-center border-b border-zinc-800",
+          "flex h-[76px] shrink-0 items-center border-b border-[var(--border)]",
           collapsed && !mobile ? "justify-center px-2" : "px-4"
         )}
       >
@@ -58,8 +58,8 @@ export function Sidebar({
           className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
           aria-label="RevRecover Dashboard"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900">
-            <Zap className="h-4 w-4 text-zinc-100" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#3e7794] bg-[#142d40]">
+            <Zap className="h-4 w-4 text-[var(--primary)]" />
           </div>
 
           {(!collapsed || mobile) && (
@@ -68,7 +68,7 @@ export function Sidebar({
                 REVRECOVER
               </span>
 
-              <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-[#789087]">
                 Revenue Intelligence
               </span>
             </div>
@@ -83,7 +83,7 @@ export function Sidebar({
             {NAVIGATION.map((section) => (
               <div key={section.label}>
                 {(!collapsed || mobile) && (
-                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#789087]">
                     {section.label}
                   </p>
                 )}
@@ -99,20 +99,20 @@ export function Sidebar({
                         onClick={onNavigate}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "group flex h-10 items-center rounded-md text-sm transition-colors",
+                          "group relative flex h-10 items-center rounded-lg text-sm transition-colors",
                           collapsed && !mobile
                             ? "justify-center px-2"
                             : "gap-3 px-3",
                           active
-                            ? "bg-zinc-800 text-zinc-100"
-                            : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                            ? "bg-[#193448] text-[#dff5ff] before:absolute before:left-0 before:h-5 before:w-0.5 before:rounded-full before:bg-[var(--primary)]"
+                            : "text-[#9aaab6] hover:bg-[#162630] hover:text-zinc-100"
                         )}
                       >
                         <Icon
                           className={cn(
                             "h-4 w-4 shrink-0",
                             active
-                              ? "text-zinc-100"
+                              ? "text-[var(--primary)]"
                               : "text-zinc-500 group-hover:text-zinc-300"
                           )}
                           aria-hidden="true"
@@ -147,7 +147,7 @@ export function Sidebar({
 
       {/* Collapse button */}
       {!mobile && (
-        <div className="hidden shrink-0 border-t border-zinc-800 p-3 xl:block">
+        <div className="hidden shrink-0 border-t border-[var(--border)] p-3 xl:block">
           <Button
             type="button"
             variant="ghost"

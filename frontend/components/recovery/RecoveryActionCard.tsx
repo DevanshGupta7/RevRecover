@@ -18,6 +18,14 @@ interface RecoveryActionCardProps {
 }
 
 function actionLabel(actionType: string) {
+  if (actionType === "CREATE_PAYMENT_LINK") {
+    return "Create Payment Link";
+  }
+
+  if (actionType === "RETRY_PAYMENT") {
+    return "Retry Payment";
+  }
+
   return actionType
     .split("_")
     .map((part) => part.charAt(0) + part.slice(1).toLowerCase())

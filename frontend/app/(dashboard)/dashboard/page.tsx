@@ -14,6 +14,8 @@ import { RevenueRecoveryChart } from "@/components/dashboard/RevenueRecoveryChar
 import { FailureReasons } from "@/components/dashboard/FailureReasons";
 import { RecoveryFunnel } from "@/components/dashboard/RecoveryFunnel";
 import { RecoveryInsights } from "@/components/dashboard/RecoveryInsights";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 import { getDashboardData } from "@/services/dashboard.service";
 import { useAuth } from "@/contexts/auth-context";
@@ -47,6 +49,7 @@ export default function DashboardPage() {
 
   const [isLoading, setIsLoading] =
     useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (authLoading) {
@@ -62,11 +65,16 @@ export default function DashboardPage() {
     async function loadDashboard() {
       try {
         setIsLoading(true);
+        setLoadError(false);
 
         const data = await getDashboardData();
 
         if (!cancelled) {
           setDashboard(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError(true);
         }
       } finally {
         if (!cancelled) {
@@ -82,30 +90,46 @@ export default function DashboardPage() {
     };
   }, [authLoading, isAuthenticated]);
 
-  if (authLoading || isLoading || !dashboard) {
+  if (authLoading || isLoading) {
     return (
-      <div className="flex min-h-full items-center justify-center">
-        <p className="text-sm text-zinc-500">
-          Loading dashboard...
-        </p>
+      <div className="page-container">
+        <LoadingState message="Loading revenue intelligence..." />
+      </div>
+    );
+  }
+
+  if (loadError || !dashboard) {
+    return (
+      <div className="page-container">
+        <ErrorState
+          title="Dashboard unavailable"
+          message="We couldn't load the latest recovery intelligence."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
 
   return (
     <div className="min-h-full">
-      <div className="mx-auto w-full max-w-[1600px] p-5 md:p-8">
+      <div className="page-container">
 
         {/* Header */}
-        <section className="mb-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-100">
-              Revenue Recovery
-            </h2>
-
-            <p className="text-sm text-zinc-500">
-              Recover revenue that would otherwise be lost.
+        <section className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--primary)]">
+              Overview
             </p>
+            <h2 className="text-3xl font-semibold tracking-tight text-zinc-100">
+              Revenue recovery
+            </h2>
+            <p className="max-w-xl text-sm text-[#94a39c]">
+              See where failed payments need attention and how much revenue your recovery engine is returning.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-[#3b6478] bg-[#173044] px-3 py-2 text-xs text-[#8dd8ff]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#8dd8ff] shadow-[0_0_8px_rgba(141,216,255,0.8)]" aria-hidden="true" />
+            Recovery engine active
           </div>
         </section>
 
@@ -115,12 +139,13 @@ export default function DashboardPage() {
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         >
           <MetricCard
-            label="At Risk"
+            label="Unrecovered Revenue"
             value={formatIndianCurrency(
               dashboard.metrics.revenueAtRisk
             )}
             icon={ShieldAlert}
-            description="Revenue currently at risk"
+            description="Failed-payment revenue not yet recovered"
+            className="border-red-500/30 bg-[linear-gradient(135deg,rgba(239,68,68,0.08),rgba(22,30,39,0.98))] [&_.metric-label]:text-red-400 [&_.metric-icon]:border-red-500/20 [&_.metric-icon]:bg-red-500/10 [&_.metric-icon_svg]:text-red-400"
           />
 
           <MetricCard
@@ -151,15 +176,18 @@ export default function DashboardPage() {
 
         {/* Revenue Recovery Chart */}
         <section className="mt-6">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950">
-            <div className="border-b border-zinc-800 px-5 py-4">
-              <h3 className="text-sm font-medium text-zinc-100">
+          <div className="app-surface">
+            <div className="flex flex-col justify-between gap-2 border-b border-[var(--border)] px-5 py-4 sm:flex-row sm:items-center">
+              <div>
+              <h3 className="text-base font-semibold text-zinc-100">
                 Revenue Recovery
               </h3>
 
               <p className="mt-1 text-xs text-zinc-500">
                 Revenue at risk versus recovered revenue
               </p>
+              </div>
+              <span className="text-xs text-[#8ca098]">Cumulative view</span>
             </div>
 
             <div className="p-5">
@@ -169,12 +197,12 @@ export default function DashboardPage() {
 
               <div className="mt-2 flex items-center justify-center gap-6 text-xs">
                 <div className="flex items-center gap-2 text-zinc-400">
-                  <span className="h-2 w-2 rounded-full bg-zinc-400" />
-                  At Risk
+                  <span className="h-2 w-2 rounded-full bg-[#d49a73]" />
+                  Unrecovered
                 </div>
 
                 <div className="flex items-center gap-2 text-zinc-400">
-                  <span className="h-2 w-2 rounded-full bg-zinc-100" />
+                  <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
                   Recovered
                 </div>
               </div>

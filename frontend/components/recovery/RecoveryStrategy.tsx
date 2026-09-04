@@ -13,7 +13,7 @@ const STRATEGY_LABELS: Record<
   retry_after_delay: "Retry after delay",
 
   update_payment_method:
-    "Update payment method",
+    "Request payment method update",
 
   alternate_payment_method:
     "Alternate payment method",

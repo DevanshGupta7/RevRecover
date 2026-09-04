@@ -2,6 +2,7 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
@@ -33,11 +34,31 @@ def get_customer_by_email(
     )
 
 
+def get_customer_by_phone(
+    db: Session, *, organisation_id: UUID, phone: str | None
+) -> Customer | None:
+    if not phone:
+        return None
+
+    return (
+        db.query(Customer)
+        .filter(Customer.organisation_id == organisation_id, Customer.phone == phone)
+        .first()
+    )
+
+
 def resolve_customer(
     db: Session, *, organisation_id: UUID, parsed_event: ParsedPaymentEvent
 ) -> Customer:
     customer = get_customer_by_email(
         db, organisation_id=organisation_id, email=parsed_event.customer_email
+    )
+
+    if customer:
+        return customer
+
+    customer = get_customer_by_phone(
+        db, organisation_id=organisation_id, phone=parsed_event.customer_phone
     )
 
     if customer:
@@ -118,7 +139,10 @@ def process_payment_event(
         db.query(PaymentAttempt)
         .filter(
             PaymentAttempt.payment_id == payment.id,
-            PaymentAttempt.provider_event_id == parsed_event.provider_event_id,
+            or_(
+                PaymentAttempt.provider_event_id == parsed_event.provider_event_id,
+                PaymentAttempt.provider_attempt_id == parsed_event.payment_id,
+            ),
         )
         .first()
     )

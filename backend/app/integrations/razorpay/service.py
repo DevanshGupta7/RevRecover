@@ -29,6 +29,30 @@ class RazorpayService(PaymentProvider):
                 "Failed to fetch payment from Razorpay."
             ) from exc
 
+    def get_payments(
+        self,
+        *,
+        count: int = 100,
+        skip: int = 0,
+        from_timestamp: int | None = None,
+        to_timestamp: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fetch one page of payments from Razorpay."""
+
+        params: dict[str, int] = {"count": count, "skip": skip}
+        if from_timestamp is not None:
+            params["from"] = from_timestamp
+        if to_timestamp is not None:
+            params["to"] = to_timestamp
+
+        try:
+            response = self.client.client.payment.all(params)
+            return list(response.get("items", []))
+        except Exception as exc:
+            raise RazorpayAPIException(
+                "Failed to fetch payments from Razorpay."
+            ) from exc
+
     def verify_payment_signature(
         self, order_id: str, payment_id: str, signature: str
     ) -> None:

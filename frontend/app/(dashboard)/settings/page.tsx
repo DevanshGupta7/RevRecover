@@ -9,6 +9,7 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { RecoverySettings } from "@/components/settings/RecoverySettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { OrganisationSettings } from "@/components/settings/OrganisationSettings";
+import { RazorpaySync } from "@/components/settings/RazorpaySync";
 
 import { getSettings } from "@/services/settings.service";
 
@@ -74,6 +75,14 @@ export default function SettingsPage() {
                 settings.organisation
               }
             />
+          </SettingsSection>
+
+          <SettingsSection
+            title="Razorpay Integration"
+            description="Import payments from your connected Razorpay account."
+            icon={SettingsIcon}
+          >
+            <RazorpaySync />
           </SettingsSection>
         </div>
 
